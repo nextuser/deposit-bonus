@@ -8,6 +8,7 @@ use sui::table::{Self,Table};
 use sui::clock::{Self,Clock};
 use sui::event::emit;
 use sui::sui::SUI as CoinType;
+use deposit_bonus::err_consts;
 
 public struct DepositEvent has copy,drop{
     user : address,
@@ -69,22 +70,19 @@ entry fun take_balance_from_dex(clock: &Clock,storage: & mut Storage, amount : u
 
 }
 
-const ErrNoAccount : u64 = 0;
-const ErrNoEnoughShare : u64 = 1;
-const ErrTakeBalanceFailButShareEnough : u64 = 2;
 public  fun withdraw(clock: &Clock,storage: & mut Storage,amount : u64,ctx : &mut TxContext) : Balance<CoinType>{
     let sender = ctx.sender();
-    assert!( table::contains(&storage.user_shares,sender),ErrNoAccount );
+    assert!( table::contains(&storage.user_shares,sender),err_consts::account_not_exists!() );
     //check share
     let share = table::borrow(&storage.user_shares, sender);
-    assert!(share.amount >= amount , ErrNoEnoughShare);
+    assert!(share.amount >= amount ,err_consts::share_not_enough!() );
     
     // take money from dex
     if(storage.balances.value() < amount ){
         take_balance_from_dex(clock, storage, amount, ctx);
     };
     // make  balance enough
-    assert!(storage.balances.value() >= amount,ErrTakeBalanceFailButShareEnough);
+    assert!(storage.balances.value() >= amount,err_consts::balance_not_enough!());
     let balance = storage.balances.split(amount);
     
     let mshare = table::borrow_mut(&mut storage.user_shares, sender);  
@@ -97,8 +95,16 @@ public  fun withdraw(clock: &Clock,storage: & mut Storage,amount : u64,ctx : &mu
     balance
 }
 
-
 entry fun entry_withdraw(clock: &Clock,storage: & mut Storage,amount : u64,ctx : &mut TxContext){
     let b = withdraw(clock, storage, amount, ctx);
     transfer::public_transfer(coin::from_balance<CoinType>(b,ctx), ctx.sender());
 }
+
+public fun get_share(storage: & Storage,ctx : &mut TxContext) : u64{
+    let sender = ctx.sender();
+    let share = table::borrow(&storage.user_shares,sender);
+    share.amount
+}
+
+
+
