@@ -1,8 +1,8 @@
-ljl@ljl-i5-14400:sui-system$ sui client switch --env mainnet
+$sui client switch --env mainnet
 [warning] Client/Server api version mismatch, client api version : 1.38.0, server api version : 1.39.0
 Active environment switched to [mainnet]
-ljl@ljl-i5-14400:sui-system$ sui client ptb --split-coins gas [1000000000] --assign coin1 --move-call \
-:sui_system::req>  0x3::sui_system::request_add_stake  @$SYSTEM_STATE coin1 @$VD_ADDR
+$sui client ptb --split-coins gas [1000000000] --assign coin1 --move-call \
+  0x3::sui_system::request_add_stake  @$SYSTEM_STATE coin1 @$VD_ADDR
 [warning] Client/Server api version mismatch, client api version : 1.38.0, server api version : 1.38.3
 Transaction Digest: 3hFaLrrDG4g5ADm5AY7BSQXjjCmYHbk5ftwxrdZKt2NE
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -181,10 +181,10 @@ Transaction Digest: 3hFaLrrDG4g5ADm5AY7BSQXjjCmYHbk5ftwxrdZKt2NE
 │  └──                                                                                              │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-ljl@ljl-i5-14400:sui-system$  export CLIENT_ADDR=`sui client active-address`
+$ export CLIENT_ADDR=`sui client active-address`
 cts $CLIENT_ADDR
 [warning] Client/Server api version mismatch, client api version : 1.38.0, server api version : 1.38.3
-ljl@ljl-i5-14400:sui-system$  sui client objects $CLIENT_ADDR
+$ sui client objects $CLIENT_ADDR
 [warning] Client/Server api version mismatch, client api version : 1.38.0, server api version : 1.38.3
 ╭───────────────────────────────────────────────────────────────────────────────────────╮
 │ ╭────────────┬──────────────────────────────────────────────────────────────────────╮ │
@@ -260,8 +260,8 @@ ljl@ljl-i5-14400:sui-system$  sui client objects $CLIENT_ADDR
 │ │ objectType │  0x0000..0002::coin::Coin                                            │ │
 │ ╰────────────┴──────────────────────────────────────────────────────────────────────╯ │
 ╰───────────────────────────────────────────────────────────────────────────────────────╯
-ljl@ljl-i5-14400:sui-system$ export STAKE_OBJ=0x63dc4f8092871600b8a8b7542ea74280eba69be3b322fe0a135079b51bbbd4e3
-ptb --move-call ljl@ljl-i5-14400:sui-system$  sui client ptb --move-call 0x3::sui_system::request_withdraw_stake @$SYSTEM_STATE @$STAKE_OBJ
+$export STAKE_OBJ=0x63dc4f8092871600b8a8b7542ea74280eba69be3b322fe0a135079b51bbbd4e3
+ptb --move-call $ sui client ptb --move-call 0x3::sui_system::request_withdraw_stake @$SYSTEM_STATE @$STAKE_OBJ
 [warning] Client/Server api version mismatch, client api version : 1.38.0, server api version : 1.38.3
 Transaction Digest: 3btfWHnBPkachCRGLsUbx5MxcgYAT1ihNhMaVWMyLNjP
 ╭─────────────────────────────────────────────────────────────────────────────────────────────────╮

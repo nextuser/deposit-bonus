@@ -13,3 +13,16 @@ public macro fun balance_not_enough() : u64{
 public macro fun empty_range(): u64 {
     3
 }
+
+public macro fun percent_out_of_range() : u64 {
+    4
+}
+
+
+public macro fun withdraw_fail() : u64 {
+    5
+}
+
+public macro fun balance_less_than_staked() : u64{
+    6
+}

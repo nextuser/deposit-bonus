@@ -1,4 +1,4 @@
-module deposit_bonus::utils;
+module deposit_bonus::range;
 use std::u256;
 use deposit_bonus::err_consts;
 #[test_only] use  sui::test_utils as tu;
