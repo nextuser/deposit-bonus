@@ -30,3 +30,7 @@ public macro fun balance_less_than_staked() : u64{
 public macro fun fee_percent_out_of_range() : u64{
     7
 }
+
+public macro fun withdraw_share_not_enough() : u64{
+    8
+}

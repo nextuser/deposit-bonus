@@ -2,7 +2,7 @@
 module deposit_bonus::bonus;
 use sui::clock::{Self,Clock};
 
-public struct UserBonus has store{
+public struct BonusRecord has store{
     id : address,
     gain : u64, //抽奖收获
     pay : u64, //抽奖开销
@@ -13,15 +13,15 @@ public struct BonusPeriod has key,store{
     id : UID,
     time_ms : u64,
     epoch : u64,
-    bonus_list : vector<UserBonus>,
+    bonus_list : vector<BonusRecord>,
 }
 
 public fun create_user_bonus(user :address , 
                             gain : u64, 
                             pay : u64, 
                             principal : u64)
-                             : UserBonus{
-    UserBonus{
+                             : BonusRecord{
+    BonusRecord{
         id : user,
         gain,
         pay,
@@ -48,7 +48,7 @@ entry  fun create_period(clock : &Clock,
 }
 
 public fun add_user_bonus(period : &mut BonusPeriod, 
-                          bonus : UserBonus)
+                          bonus : BonusRecord)
 {
     period.bonus_list.push_back(bonus);
 }
