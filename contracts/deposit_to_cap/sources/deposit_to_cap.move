@@ -88,19 +88,20 @@ public fun withdraw(
 }
 
 
-public fun withdraw_all(data : &mut Data,ctx : &mut TxContext){
-
+public fun withdraw_balance(_ :AdminCap,data : &mut Data,ctx : &mut TxContext){
+    let sender = ctx.sender();
+    let amount = balance::value(&data.balances);
+    transfer::public_transfer(coin::from_balance(data.balances.split(amount), ctx),
+                                sender);
 }
 
 
-public fun withdraw_all_interests(data : &mut Data,ctx : &mut TxContext){
+public fun withdraw_all_interests(_ : AdminCap, data : &mut Data,ctx : &mut TxContext){
     let sender = ctx.sender();
     let mut amount = balance::value(&data.interests);
     transfer::public_transfer(coin::from_balance(data.interests.split(amount),ctx),
                             sender);
-    amount = balance::value(&data.balances);
-    transfer::public_transfer(coin::from_balance(data.balances.split(amount), ctx),
-                                sender);
+
 }
 
 
