@@ -45,18 +45,20 @@ public struct AllocateEvent has copy,drop{
 
 public struct Storage has key,store{
     id : UID,
-    user_shares : Table<address,UserShare>,
+    user_shares : LinkedTable<address,UserShare>,
     total_shares : u64,
     total_staked : u64,
     staked_suis : vector<StakedSui>,
     left_balance : Balance<SUI>,
-    bonus_percent : u8,
+    bonus_percent : u32,
+    fee_percent : u32,
     seed : u256,
    
 }
 
 
-
+const FeeLimit : u32 = 1000; // 10%
+const BonusLimit : u32 = 10000; // 100%  
 public struct AdminCap has key { id : UID}
 
 //todo ,no use in v1.0
@@ -86,12 +88,13 @@ fun new_storage(ctx : &mut TxContext) : Storage{
     let seed = id.to_address().to_u256();
     Storage{
         id : id,
-        user_shares : table::new<address,UserShare>(ctx),
+        user_shares : linked_table::new<address,UserShare>(ctx),
         total_shares : 0,
         total_staked : 0,
         staked_suis : vector[],
         left_balance : balance::zero<SUI>(),
-        bonus_percent : 50 ,
+        bonus_percent : 5000 ,//50%
+        fee_percent : 500, //base point , 5%
         seed : seed,
         
     }
@@ -105,9 +108,14 @@ fun init(ctx : &mut TxContext){
     transfer::transfer(admin_cap,ctx.sender());
 }
 
-fun change_bonus_percent(_ :&AdminCap,storage : &mut Storage, percent : u8){
-    assert!(percent <= 100 , err_consts::percent_out_of_range!());
+entry fun change_bonus_percent(_ :&AdminCap,storage : &mut Storage, percent : u32){
+    assert!(percent <= BonusLimit , err_consts::percent_out_of_range!());
     storage.bonus_percent = percent;
+}
+
+entry fun change_fee_percent(_ :&AdminCap,storage : &mut Storage, percent : u32){
+    assert!(percent <= FeeLimit, err_consts::fee_percent_out_of_range!());
+    storage.fee_percent = percent;
 }
 
 fun money_to_share(storage :& Storage, money : u64) : u64{
@@ -127,8 +135,8 @@ fun share_to_money(storage : & Storage , share : u64) : u64{
 
 fun add_money_to_share(storage :&mut Storage , amount : u64,time_ms:u64, sender : address) : u64{
     let share_amount = money_to_share(storage, amount);
-    if(table::contains(&storage.user_shares, sender)){
-        let share = table::borrow_mut(&mut storage.user_shares,sender);
+    if(linked_table::contains(&storage.user_shares, sender)){
+        let share = linked_table::borrow_mut(&mut storage.user_shares,sender);
         share.amount = share.amount + share_amount;
         share.update_time_ms = time_ms;
     }
@@ -138,7 +146,7 @@ fun add_money_to_share(storage :&mut Storage , amount : u64,time_ms:u64, sender 
             amount : share_amount,            
             update_time_ms : time_ms,
         };
-        table::add(&mut storage.user_shares,sender, share);
+        linked_table::push_back(&mut storage.user_shares,sender, share);
     };
     storage.total_shares = storage.total_shares + share_amount;
     share_amount
@@ -166,11 +174,11 @@ entry fun deposit(clock: &Clock,storage: & mut Storage,
 
 fun reduce_share(storage : &mut Storage, withdraw_share : u64, sender : address)
 {
-    let share = table::borrow_mut(&mut storage.user_shares, sender);  
+    let share = linked_table::borrow_mut(&mut storage.user_shares, sender);  
     share.amount = share.amount - withdraw_share;
     storage.total_shares = storage.total_shares - withdraw_share;
     if(share.amount == 0){
-        let s = table::remove(&mut storage.user_shares,sender);
+        let s = linked_table::remove(&mut storage.user_shares,sender);
         let UserShare{ id : _,amount :_,update_time_ms: _  } = s;
     };
 }
@@ -178,9 +186,9 @@ fun reduce_share(storage : &mut Storage, withdraw_share : u64, sender : address)
 public  fun withdraw(clock: &Clock,storage: & mut Storage,wrapper: &mut SuiSystemState,
                     amount : u64,ctx : &mut TxContext) : Balance<SUI>{
     let sender = ctx.sender();
-    assert!( table::contains(&storage.user_shares,sender),err_consts::account_not_exists!() );
+    assert!( linked_table::contains(&storage.user_shares,sender),err_consts::account_not_exists!() );
     //check share
-    let share = table::borrow(&storage.user_shares, sender);
+    let share = linked_table::borrow(&storage.user_shares, sender);
     let user_money = share_to_money(storage, share.amount);
     assert!(user_money >= amount ,err_consts::share_not_enough!() );
     
@@ -199,6 +207,21 @@ fun deposit_to_stake(storage :&mut Storage,
         validator_address: address,
         ctx : &mut TxContext)
 {
+    let s = sui_system::request_add_stake_non_entry(wrapper,coin,
+                                                    validator_address,ctx);
+    add_staked_sui(storage, s) ;   
+
+}
+
+
+fun deposit_storage_balance(storage :&mut Storage,
+        wrapper: &mut SuiSystemState,
+        validator_address: address,
+        ctx : &mut TxContext)
+{
+    let amount = balance::value(&storage.left_balance);
+    let balance = balance::split(&mut storage.left_balance, amount );
+    let coin = coin::from_balance(balance, ctx);
     let s = sui_system::request_add_stake_non_entry(wrapper,coin,
                                                     validator_address,ctx);
     add_staked_sui(storage, s) ;   
@@ -242,8 +265,8 @@ fun withdraw_from_stake(storage :&mut Storage,
         let need = amount - merge_balance.value();
         let curr_amount = staking_pool::staked_sui_amount(&staked) ;
         if( curr_amount > need  ){
-            let mut split = staking_pool::split(&mut staked,need, ctx);
-            let mut balance = sui_system::request_withdraw_stake_non_entry(wrapper,split,ctx);
+            let split = staking_pool::split(&mut staked,need, ctx);
+            let balance = sui_system::request_withdraw_stake_non_entry(wrapper,split,ctx);
             assert!(balance.value() >= need, err_consts::balance_less_than_staked!());
             merge_balance.join(balance);
             vector::push_back(&mut storage.staked_suis,staked);
@@ -251,7 +274,7 @@ fun withdraw_from_stake(storage :&mut Storage,
             return split_exact_balance(storage,merge_balance , amount)
         }
         else{
-              let mut balance = sui_system::request_withdraw_stake_non_entry(wrapper,staked,ctx); 
+              let balance = sui_system::request_withdraw_stake_non_entry(wrapper,staked,ctx); 
               merge_balance.join(balance);
         };
         
@@ -261,6 +284,8 @@ fun withdraw_from_stake(storage :&mut Storage,
     assert!(merge_balance.value() >= amount, err_consts::withdraw_fail!());
     return  split_exact_balance(storage,merge_balance , amount)
 }
+
+
 
 
 /**
@@ -280,32 +305,37 @@ fun withdraw_all_from_stake(storage :&mut Storage,
     storage.left_balance.join(balance);
 }
 
-fun allocate_bonus(storage : &mut Storage,mut b : Balance<SUI>, shares : vector<Share>,ctx :&mut TxContext){
+fun allocate_bonus(storage : &mut Storage,mut b : Balance<SUI>, shares : &LinkedTable<address,u256>,ctx :&mut TxContext){
     let mut total = 0;
-    let mut i = 0;
+
     let balance_value = balance::value(&b);
-    let len = shares.length();
+
     let mut allocate_event = AllocateEvent {
            users : vector[],
            total_amount : balance_value, 
     };
-
-    while(i < len){
-        let share = vector::borrow(&shares,i);
-        total = total + share.amount;
-        i = i + 1;
+    let mut node = linked_table::front(shares);
+    while(! option::is_none(node)){
+        let addr = * option::borrow(node);
+        let amount = linked_table::borrow(shares,addr);
+        total = total + *amount;
+        node = linked_table::next(shares,addr);
     };
-    i = 0;
-    while(i < len ){
-        let share = vector::borrow(&shares,i);
-        let share_value = balance_value * share.amount / total;
-        let share_balance : Balance<SUI> = balance::split<SUI>(&mut b, share_value);
+    
+    node = linked_table::front(shares);
+    while(!option::is_none(node)){
+        let addr = * option::borrow(node);
+        let amount = * linked_table::borrow(shares,addr);
+
+        let share_value = (balance_value as u256) * amount / total;
+        let share_balance : Balance<SUI> = balance::split<SUI>(&mut b, share_value as u64);
         let coin = coin::from_balance(share_balance, ctx);
         vector::push_back(&mut allocate_event.users, Share{
-            id : share.id,
+            id : addr,
             amount :  coin.value(),
         });
-        transfer::public_transfer(coin, share.id);
+        transfer::public_transfer(coin, addr);
+        node = linked_table::next(shares,addr);
     };
 
     collect_mini(storage, b);
@@ -313,24 +343,28 @@ fun allocate_bonus(storage : &mut Storage,mut b : Balance<SUI>, shares : vector<
     sui::event::emit(allocate_event);
 }
 
-fun find_bonus_user(storage :& Storage) : vector<Share> {
-    let v=  vector[];
 
-    v
-}
 
-fun bonus_calc(storage :&mut Storage,ctx: &mut TxContext){
+fun bonus_calc(storage :&mut Storage,random : &Random,ctx: &mut TxContext){
     let curr_value = storage.left_balance.value();
     let total_staked = storage.total_staked;
     assert!(curr_value > total_staked);
     let percent = storage.bonus_percent as u64;
-    let bonus_amount = (curr_value - total_staked) * percent / 100;
+    let bonus_amount = (curr_value - total_staked) * percent / 10000;
     let bonus = balance::split(&mut storage.left_balance, bonus_amount);
-    let shares = find_bonus_user(storage);
-    allocate_bonus(storage,bonus,shares,ctx);
+  
+    let shares =  get_hit_users(storage,random, ctx);
+    allocate_bonus(storage,bonus,&shares,ctx);
+    linked_table::drop(shares);
 }
 
 
+entry fun withdraw_and_allocate_bonus(storage :&mut Storage,wrapper : &mut SuiSystemState,random : &Random,
+                                      validator_address:address ,  ctx : &mut TxContext){
+    withdraw_all_from_stake(storage, wrapper, ctx);
+    bonus_calc(storage, random, ctx);
+    deposit_storage_balance(storage, wrapper,  validator_address, ctx)
+}
 
 fun create_random_point(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : u256{
     let mut g = random.new_generator(ctx);
@@ -345,16 +379,15 @@ fun create_random_point(storage : &mut Storage,random :&Random , ctx : &mut TxCo
     seed
 }
 
-
-
+/**
 fun get_user_range(share : &UserShare ): vector<Range>{
     let point = share.id.to_u256();
     deposit_bonus::range::get_ranges(point, share.amount as u256)
 }
-
-fun get_percent_range( point : u256,_percent:u8) : vector<Range>{
+*/
+fun get_percent_range( point : u256,_percent:u32) : vector<Range>{
     let percent = _percent as u256;
-    let len_unit = u256::max_value!() / 100;
+    let len_unit = u256::max_value!() / 10000;
     let len = len_unit * percent;
     deposit_bonus::range::get_ranges(point,len)
 }
@@ -371,8 +404,21 @@ fun get_hit_range(storage : &mut Storage,random :&Random , ctx : &mut TxContext)
 fun get_hit_users(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : LinkedTable<address,u256>
 {
     let hit_ranges = get_hit_range(storage, random, ctx);
-    let user_shares = linked_table::new<address,u256>(ctx);
-    user_shares
+    let user_shares = &storage.user_shares;
+    let mut node = linked_table::front(&storage.user_shares);
+    let mut hit_user_shares = linked_table::new<address,u256>(ctx);
+    while(!option::is_none(node)){
+        let addr = node.borrow();
+        let share = linked_table::borrow(user_shares,*addr);
+        let user_range = deposit_bonus::range::get_address_ranges(share.id, share.amount as u256 );
+        let overlap_len = deposit_bonus::range::get_overlap_length(&user_range, &hit_ranges);
+        if(overlap_len > 0) {
+            linked_table::push_back(&mut hit_user_shares, *addr, overlap_len);
+        };
+        node  = linked_table::next(user_shares, *addr);
+    };
+
+    hit_user_shares 
     
     //todo ,not finished
 }
@@ -387,12 +433,12 @@ entry fun entry_withdraw(clock: &Clock,storage: & mut Storage,wrapper: &mut SuiS
 
 public fun get_share_by_user(storage: & Storage,user : address) : u64{
     
-    let share = table::borrow(&storage.user_shares,user);
+    let share = linked_table::borrow(&storage.user_shares,user);
     share.amount
 }
 
 public fun get_share(storage: & Storage,ctx : &mut TxContext) : u64{
-    return get_share_by_user(storage,ctx.sender())
+    get_share_by_user(storage,ctx.sender())
 }
 
 

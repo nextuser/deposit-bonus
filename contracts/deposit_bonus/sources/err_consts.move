@@ -26,3 +26,7 @@ public macro fun withdraw_fail() : u64 {
 public macro fun balance_less_than_staked() : u64{
     6
 }
+
+public macro fun fee_percent_out_of_range() : u64{
+    7
+}
