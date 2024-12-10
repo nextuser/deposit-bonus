@@ -16,8 +16,11 @@ public struct BonusPeriod has key,store{
     bonus_list : vector<UserBonus>,
 }
 
-public fun create_user_bonus(user :address , gain : u64, 
-                    pay : u64, principal : u64) : UserBonus{
+public fun create_user_bonus(user :address , 
+                            gain : u64, 
+                            pay : u64, 
+                            principal : u64)
+                             : UserBonus{
     UserBonus{
         id : user,
         gain,
@@ -28,8 +31,7 @@ public fun create_user_bonus(user :address , gain : u64,
 
 
 
-public  fun create_bonus_period(
-                                time_ms : u64,
+public  fun create_bonus_period(time_ms : u64,
                                 ctx : &mut TxContext) :BonusPeriod {
     BonusPeriod{
         id : object::new(ctx),
@@ -39,15 +41,14 @@ public  fun create_bonus_period(
     }
 }
 
-entry  fun create_period(       clock : &Clock,
-                                ctx : &mut TxContext)  {
+entry  fun create_period(clock : &Clock,
+                         ctx : &mut TxContext)  {
     let p = create_bonus_period(clock.timestamp_ms(), ctx);
     transfer::transfer(p,ctx.sender());
 }
 
-public fun add_user_bonus(
-                    period : &mut BonusPeriod, 
-                    bonus : UserBonus)
+public fun add_user_bonus(period : &mut BonusPeriod, 
+                          bonus : UserBonus)
 {
     period.bonus_list.push_back(bonus);
 }
