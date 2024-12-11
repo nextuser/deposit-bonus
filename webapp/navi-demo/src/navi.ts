@@ -13,7 +13,7 @@ const client = new NAVISDKClient(
 let  account = client.accounts[0];
 console.log("account is",account);
 
-console.log("derivation path", account.getDerivePath());
+console.log("derivation path", account.getDerivationPath(0));
 
 
 account.getAllCoins( true).then(console.log);
@@ -45,7 +45,7 @@ account.getHealthFactor(new_address).then(get_promp_print("getHealthFactor"));
 
 client.getAddressAvailableRewards(new_address,  1).then(get_promp_print("getAddressAvailableRewards"));
 
-import {Sui,wUSDC,USDT} from 'navi-sdk/dist/address'
+import {Sui,wUSDC} from 'navi-sdk/dist/address'
 console.log(wUSDC.address,wUSDC.symbol,wUSDC.decimal);
 client.getPoolInfo(Sui).then(get_promp_print('Sui pool info'))
 
