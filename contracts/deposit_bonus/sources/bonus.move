@@ -16,7 +16,9 @@ public struct BonusPeriod has key,store{
     bonus_list : vector<BonusRecord>,
 }
 
-public fun create_user_bonus(user :address , 
+
+
+public fun create_bonus_record(user :address , 
                             gain : u64, 
                             pay : u64, 
                             principal : u64)
