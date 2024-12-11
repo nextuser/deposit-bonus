@@ -4,6 +4,7 @@
 
 module deposit_bonus::deposit_bonus;
 use std::hash;
+use std::u256;
 use sui::random::Random;
 use sui::bcs;
 use sui::address;
@@ -59,7 +60,6 @@ public struct Storage has key,store{
     bonus_percent : u32,
     fee_percent : u32,
     seed : u256,
-   
 }
 
 public struct BonusHistory has key{
@@ -87,7 +87,7 @@ public fun  get_user_info(storage : &Storage, ctx : &mut TxContext) : UserInfo{
     }
 }
 
-
+const PERCENT_MAX:u32 = 10000; //100%
 const FeeLimit : u32 = 1000; // 10%
 const BonusLimit : u32 = 10000; // 100%  
 public struct AdminCap has key { id : UID}
@@ -114,7 +114,7 @@ fun add_staked_sui(storage : &mut Storage , new_staked : StakedSui){
     };
     vector::push_back(&mut storage.staked_suis, new_staked);
 }
-use std::u256;
+
 fun new_storage(ctx : &mut TxContext) : Storage{
     let id = object::new(ctx);
     let seed = id.to_address().to_u256();
@@ -173,8 +173,6 @@ fun money_to_share(storage :& Storage, money : u64) : u64{
     share_amount
 }
 
-
-
 fun share_to_money(storage : & Storage , share : u64) : u64{
     let total_sui = storage.total_staked as u128;
     let total_shares = storage.total_shares as u128;
@@ -221,7 +219,6 @@ entry fun deposit(clock: &Clock,storage: & mut Storage,
     });
 }
 
-
 fun reduce_share(storage : &mut Storage, withdraw_share : u64, sender : address)
 {
     let user_share = linked_table::borrow_mut(&mut storage.user_shares, sender);  
@@ -235,6 +232,9 @@ fun reduce_share(storage : &mut Storage, withdraw_share : u64, sender : address)
     };
 }
 
+/**
+one user  to withdraw his staked sui
+*/
 public  fun withdraw(clock: &Clock,storage: & mut Storage,wrapper: &mut SuiSystemState,
                     amount : u64,ctx : &mut TxContext) : Balance<SUI>{
     let sender = ctx.sender();
@@ -306,7 +306,7 @@ fun split_exact_balance(storage :&mut Storage, mut merge_balance :Balance<SUI>,a
 }
 
 /**
-when one use withdraw his share
+when one user withdraw his share
 */
 fun withdraw_from_stake(storage :&mut Storage, 
                         wrapper: &mut SuiSystemState,
@@ -314,7 +314,6 @@ fun withdraw_from_stake(storage :&mut Storage,
                         ctx: &mut TxContext) :Balance<SUI>{
 
     let count = vector::length(&storage.staked_suis);
-    let mut i = 0;
     let mut merge_balance = balance::zero<SUI>();
     while(!vector::is_empty(&storage.staked_suis)){
         let mut staked  = vector::pop_back(&mut storage.staked_suis);
@@ -336,16 +335,11 @@ fun withdraw_from_stake(storage :&mut Storage,
               merge_balance.join(balance);
               storage.total_staked = storage.total_staked - curr_amount;
         };
-        
 
-        i = i + 1;
     };
     assert!(merge_balance.value() >= amount, err_consts::withdraw_fail!());
     split_exact_balance(storage,merge_balance , amount)
 }
-
-
-
 
 /**
 take the reward  after a period
@@ -416,8 +410,6 @@ fun allocate_bonus(storage : &mut Storage,
     sui::event::emit(allocate_event);
 }
 
-
-
 fun bonus_calc(storage :&mut Storage,
                 random : &Random,
                 time_ms : u64,
@@ -435,7 +427,10 @@ fun bonus_calc(storage :&mut Storage,
     linked_table::drop(shares);
 }
 
-
+/**
+dapp call this function periodically ,
+the OperatorCap owner key will be deplayed in server
+*/
 entry fun withdraw_and_allocate_bonus(_ : &OperatorCap,
                                     clock : &Clock,
                                     storage :&mut Storage,
@@ -471,7 +466,7 @@ fun get_user_range(share : &UserShare ): vector<Range>{
 */
 fun get_percent_range( point : u256,_percent:u32) : vector<Range>{
     let percent = _percent as u256;
-    let len_unit = u256::max_value!() / 10000;
+    let len_unit = u256::max_value!() / (PERCENT_MAX as u256);
     let len = len_unit * percent;
     deposit_bonus::range::get_ranges(point,len)
 }
@@ -483,7 +478,6 @@ fun get_hit_range(storage : &mut Storage,random :&Random , ctx : &mut TxContext)
     hit_ranges
 
 }
-
 
 fun get_hit_users(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : LinkedTable<address,u256>
 {
@@ -503,8 +497,6 @@ fun get_hit_users(storage : &mut Storage,random :&Random , ctx : &mut TxContext)
     };
 
     hit_user_shares 
-    
-    //todo ,not finished
 }
 
 entry fun entry_withdraw(clock: &Clock,storage: & mut Storage,wrapper: &mut SuiSystemState,
