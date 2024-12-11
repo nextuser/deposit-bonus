@@ -2,19 +2,18 @@ import dotenv from 'dotenv'
 import {NAVISDKClient} from 'navi-sdk'
 dotenv.config();
 
-const mnemonic  = (process.env.mnemonic ) 
+const mnemonic  = (process.env.mnmonic ) 
 const client = new NAVISDKClient(
     {
         networkType : "mainnet" ,
-        numberOfAccounts : 5,
-        wordLength : 12,
+        numberOfAccounts : 1,
         mnemonic : mnemonic
     }
 );
 let  account = client.accounts[0];
-console.log("accounts is",client.accounts);
+console.log("account is",account);
 
-///console.log("derivation path", account.getDerivationPath());
+console.log("derivation path", account.getDerivePath());
 
 
 account.getAllCoins( true).then(console.log);
@@ -30,8 +29,8 @@ console.log("wallet balance:",await account.getWalletBalance(true));
 
 console.log(client.getAllAccounts());
 
-function get_promp_print(str){
-    let f = function(arg){
+function get_promp_print(str:string){
+    let f = function(arg:any){
         console.log(`----------${str}---------------`);
         console.log(arg);
     }
@@ -44,21 +43,13 @@ account.getNAVIPortfolio(new_address,true).then(get_promp_print("getNAVIPortfoli
 
 account.getHealthFactor(new_address).then(get_promp_print("getHealthFactor"));
 
-account.depositToNaviWithAccountCap
-
-//client.getAvailableRewards(new_address,1).then(get_promp_print("getAddressAvailableRewards"));
 client.getAddressAvailableRewards(new_address,  1).then(get_promp_print("getAddressAvailableRewards"));
 
-import {Sui,nUSDC,USDT} from 'navi-sdk/dist/address.js'
-///console.log(wUSDC.address,USDT.symbol,wUSDC.decimal);
+import {Sui,wUSDC,USDT} from 'navi-sdk/dist/address'
+console.log(wUSDC.address,wUSDC.symbol,wUSDC.decimal);
 client.getPoolInfo(Sui).then(get_promp_print('Sui pool info'))
-client.getPoolInfo(nUSDC).then(get_promp_print('USDC pool info'))
 
 client.getReserveDetail(Sui).then(get_promp_print('sui reserve details'));
-client.getReserveDetail(nUSDC).then(get_promp_print('usdc reserve detials'))
 
-account.claimAllRewards
+client.getReserveDetail(wUSDC).then(get_promp_print('usdc reserve detials'))
 
-account.depositToNaviWithAccountCap
-
-//account.claimAllRewards(true).then(get_promp_print('claim all rewards'));
