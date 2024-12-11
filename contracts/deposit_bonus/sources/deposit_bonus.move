@@ -42,6 +42,9 @@ public(package) fun  user_original_money(us : &UserShare) : u64{
     us.original_money
 }
 
+public (package) fun get_seed(storage : &Storage) : u256{
+    storage.seed
+}
 
 public(package) fun  user_share_amount(us : &UserShare) : u64{
     us.share_amount
@@ -421,7 +424,7 @@ fun withdraw_all_from_stake(storage :&mut Storage,
     
 }
 
-fun allocate_bonus(storage : &mut Storage,
+public(package) fun allocate_bonus(storage : &mut Storage,
                     balance_amount : u64, 
                     shares : &LinkedTable<address,u256>,
                     time_ms : u64,
@@ -430,30 +433,28 @@ fun allocate_bonus(storage : &mut Storage,
     let mut total = 0;
     let mut period = bonus::create_bonus_period(time_ms,ctx);
 
-
-
     let mut allocate_event = AllocateEvent {
            users : vector[],
            total_amount : balance_amount, 
     };
-    let mut node = linked_table::front(shares);
+    let mut node = shares.front();
     while(! option::is_none(node)){
-        let addr = * option::borrow(node);
-        let amount = linked_table::borrow(shares,addr);
+        let addr = * node.borrow();
+        let amount = shares.borrow(addr);
         total = total + *amount;
-        node = linked_table::next(shares,addr);
+        node = shares.next(addr);
     };
     
     node = linked_table::front(shares);
     while(!option::is_none(node)){
-        let addr = * option::borrow(node);
-        let amount = * linked_table::borrow(shares,addr);
+        let addr = * node.borrow();
+        let amount = * shares.borrow(addr);
 
         let gain = (balance_amount as u256) * amount / total;
         //let gain_balance : Balance<SUI> = balance::split<SUI>(&mut bonus, gain as u64);
         //let coin = coin::from_balance(gain_balance, ctx);
         
-        let user_share = linked_table::borrow_mut<address,UserShare>(&mut storage.user_shares,addr);
+        let user_share =   storage.user_shares.borrow_mut(addr);
         let pay = (user_share.share_amount * balance_amount )/ storage.total_shares;
         let record = bonus::create_bonus_record(addr ,  gain as u64,
                                                         pay , user_share.original_money) ;
@@ -463,7 +464,6 @@ fun allocate_bonus(storage : &mut Storage,
             id : addr,
             amount :  user_share.bonus
         });
-        ////transfer::public_transfer(coin, addr);
         
         node = linked_table::next(shares,addr);
     };
@@ -537,17 +537,20 @@ public(package) fun get_hit_range(storage : &mut Storage,
     hit_ranges
 }
 
-fun get_hit_users(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : LinkedTable<address,u256>
+public(package) fun get_hit_users(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : LinkedTable<address,u256>
 {
     let hit_ranges = get_hit_range(storage, random, ctx);
     let user_shares = &storage.user_shares;
     let mut node = linked_table::front(&storage.user_shares);
     let mut hit_user_shares = linked_table::new<address,u256>(ctx);
+    log(b"---hit--ranges----:",&deposit_bonus::range::encode_ranges(&hit_ranges).to_ascii_string());
     while(!option::is_none(node)){
         let addr = node.borrow();
         let user_share = linked_table::borrow(user_shares,*addr);
         let user_range = deposit_bonus::range::get_address_ranges(user_share.id, user_share.share_amount as u256 );
+        log(b"---user_range----",&user_range);
         let overlap_len = deposit_bonus::range::get_overlap_length(&user_range, &hit_ranges);
+        log(b"overlapped len ",&overlap_len);
         if(overlap_len > 0) {
             linked_table::push_back(&mut hit_user_shares, *addr, overlap_len);
         };
@@ -555,6 +558,22 @@ fun get_hit_users(storage : &mut Storage,random :&Random , ctx : &mut TxContext)
     };
 
     hit_user_shares 
+}
+
+use sui::vec_map::VecMap;
+public(package) fun convert_to_vector(t : &LinkedTable<address,u256>) :vector<Share>{
+    let mut ret = vector<Share>[];
+    let mut node = t.front();
+    while(! node.is_none()){
+        let addr = * node.borrow();
+        let amount =  t.borrow(addr);
+        ret.push_back(Share{
+            id :  addr,
+            amount : (* amount) as u64
+        });
+        node = t.next(addr);
+    };
+    ret
 }
 
 entry fun entry_withdraw(clock: &Clock,storage: & mut Storage,wrapper: &mut SuiSystemState,

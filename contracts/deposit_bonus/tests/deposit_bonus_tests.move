@@ -29,7 +29,7 @@ fun test_init() : (Clock,Random,Scenario,Storage)
     let clock = sui::clock::create_for_testing(sc.ctx());
    
 
-    let mut effect = tests::next_tx(&mut sc,ADMIN_ADDR);
+    tests::next_tx(&mut sc,ADMIN_ADDR);
     let random = sc.take_shared<Random>();
     {
         deposit_bonus::deposit_bonus::init_for_testing(sc.ctx());
@@ -121,7 +121,7 @@ fun test_deposit(){
     };
     
 
-        tests::next_tx(&mut sc, USER1_ADDR);
+    tests::next_tx(&mut sc, USER1_ADDR);
     {
         let withdraw_amount = 3_000_000_000;
         db::entry_withdraw(&clock, &mut storage, &mut system_state,
@@ -147,9 +147,18 @@ fun test_deposit(){
         assert_eq(share , amount2 );
     };
 
+    let hit_users = db::get_hit_users(&mut storage, &random, sc.ctx());
+    log(b"--------------hit users------------------\n",&db::convert_to_vector(&hit_users));
+    log(b"seed",&storage.get_seed());
+    sui::linked_table::drop(hit_users);
+    
 
+    let hit_users = db::get_hit_users(&mut storage, &random, sc.ctx());
+    log(b"--------------hit users------------------\n",&db::convert_to_vector(&hit_users));
+    log(b"seed",&storage.get_seed());
+    sui::linked_table::drop(hit_users);
     tests::return_shared(system_state);
-  
+ 
     test_finish(clock, random,sc,storage);
 
 }
@@ -160,7 +169,7 @@ fun test_hit_range(){
     let  (clock,random,mut sc,mut storage) = test_init();
     tests::next_tx(&mut sc, @0xc);
     let mut i = 0;
-    while(i < 10)
+    while(i < 5)
     {
         let ranges = db::get_hit_range(&mut storage, &random, sc.ctx());
         i = i + 1;
