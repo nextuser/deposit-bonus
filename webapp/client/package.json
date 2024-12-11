@@ -12,6 +12,7 @@
   "dependencies": {
     "@mysten/bcs": "^1.2.0",
     "@mysten/sui": "^1.16.1",
+    "@types/node": "^22.10.1",
     "dotenv": "^16.4.7",
     "fs": "0.0.1-security"
   }
