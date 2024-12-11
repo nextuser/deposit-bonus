@@ -21,6 +21,7 @@ use deposit_bonus::range::Range;
 use deposit_bonus::bonus;
 use sui::linked_table::{Self,LinkedTable};
 use std::debug::print;
+use deposit_bonus::utils::log;
 
 public struct DepositEvent has copy,drop{
     user : address,
@@ -36,6 +37,20 @@ public struct UserShare  has store{
     update_time_ms: u64,
     bonus : u64,
 }
+
+public(package) fun  user_original_money(us : &UserShare) : u64{
+    us.original_money
+}
+
+
+public(package) fun  user_share_amount(us : &UserShare) : u64{
+    us.share_amount
+}
+
+public(package) fun  user_share_bonus(us : &UserShare) : u64{
+    us.bonus
+}
+
 
 fun destroy_user_share(share : UserShare){
     let UserShare{id:_,original_money:_,share_amount :_,update_time_ms :_, bonus : _} = share;
@@ -64,6 +79,13 @@ public struct Storage has key,store{
     seed : u256,
 }
 
+public fun total_share_amount(storage : &Storage) : u64{
+    storage.total_shares
+}
+
+public fun total_staked_amount(storage : &Storage) : u64{
+    storage.total_staked
+}
 
 public struct BonusHistory has key{
     id : UID,
@@ -78,6 +100,20 @@ public struct UserInfo has copy,drop{
     bonus  : u64,
 }
 
+public fun user_id(info : &UserInfo) : address{
+    info.id
+}
+
+public fun user_bonus(info :&UserInfo) : u64 {
+    info.bonus
+}
+
+public fun user_reward(info :&UserInfo) : u64 {
+    info.reward
+}
+public fun user_orignal_amount(info :&UserInfo) : u64 {
+    info.orignal_amount
+}
 
 
 const PERCENT_MAX:u32 = 10000; //100%
@@ -230,7 +266,6 @@ fun reduce_share_after_withdraw(storage : &mut Storage, withdraw_stake : u64,wit
     user_share.share_amount = user_share.share_amount - withdraw_share;
     user_share.original_money = user_share.original_money - withdraw_stake;
     storage.total_shares = storage.total_shares - withdraw_share;
-    ///storage.total_staked = storage.total_staked - withdraw_stake;
     //remove zero share
     if(user_share.share_amount == 0){
         let s = linked_table::remove(&mut storage.user_shares,sender);
@@ -268,7 +303,6 @@ public  fun withdraw(clock: &Clock,storage: & mut Storage,wrapper: &mut SuiSyste
     let mut balance = withdraw_from_stake(storage, wrapper, need, ctx);
     let withdraw_stake = balance.value();
     balance.join(bonus);
-
     
     reduce_share_after_withdraw(storage,withdraw_stake, withdraw_share,sender);
     balance
@@ -285,7 +319,6 @@ fun deposit_to_stake(storage :&mut Storage,
                                                     validator_address,ctx);
     assert!(s.amount() == coin_value);
     add_staked_sui(storage, s) ;   
-   
 }
 
 /**
@@ -475,7 +508,7 @@ entry fun withdraw_and_allocate_bonus(_ : &OperatorCap,
     stake_left_balance(storage, wrapper,  validator_address, ctx)
 }
 
-fun create_random_point(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : u256{
+public(package) fun create_random_point(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : u256{
     let mut g = random.new_generator(ctx);
     let mut full_proof: vector<u8> = vector::empty<u8>();
     vector::append<u8>(&mut full_proof, bcs::to_bytes(&storage.seed));
@@ -495,7 +528,9 @@ fun get_percent_range( point : u256,_percent:u32) : vector<Range>{
     deposit_bonus::range::get_ranges(point,len)
 }
 
-fun get_hit_range(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : vector<Range>
+public(package) fun get_hit_range(storage : &mut Storage,
+                                random :&Random , 
+                                ctx : &mut TxContext) : vector<Range>
 {
     let random_point = create_random_point(storage, random, ctx);
     let hit_ranges = get_percent_range(random_point, storage.bonus_percent );
@@ -544,17 +579,21 @@ entry fun change_fee_percent(_ :&AdminCap,storage : &mut Storage, percent : u32)
     storage.fee_percent = percent;
 }
 
-public fun get_share_by_user(storage: & Storage,user : address) : u64{
+public fun get_share_amount (storage: & Storage,user : address) : u64{
     
-    let user_share = linked_table::borrow(&storage.user_shares,user);
+    let user_share = get_share(storage,user);
     user_share.share_amount
 }
 
-public fun get_share(storage: & Storage,ctx : &mut TxContext) : u64{
-    get_share_by_user(storage,ctx.sender())
+// public fun get_share_amount(storage: & Storage,ctx : &mut TxContext) : u64{
+//     get_share_by_user(storage,ctx.sender())
+// }
+
+public(package) fun get_share(storage: & Storage,user : address) : &UserShare{
+    linked_table::borrow(&storage.user_shares,user)
 }
 
-fun  query_user_by_addr(storage : &Storage, sender : address) : UserInfo
+public(package) fun  query_user_by_addr(storage : &Storage, sender : address) : UserInfo
 {
     assert!(linked_table::contains(&storage.user_shares,sender),err_consts::account_not_exists!());
     
@@ -635,173 +674,8 @@ entry fun entry_withdraw_bonus(storage : &mut Storage, amount : u64 ,ctx : &mut 
         balance.destroy_zero();
     }
 }
-const VALIDATOR1_ADDR : address = @0x1;
-const VALIDATOR2_ADDR : address = @0x2;
-const ADMIN_ADDR : address = @0xa;
-const OPERATOR_ADDR : address = @0xb;
-const USER1_ADDR : address = @0x11;
-const USER2_ADDR : address = @0x12;
-#[test_only] use sui::test_utils::assert_eq;
-#[test_only] use sui::test_scenario::{Self as tests, Scenario};
-#[test_only] use sui::test_utils;
-#[test_only] use sui_system::governance_test_utils::{add_validator_full_flow, advance_epoch, remove_validator, set_up_sui_system_state, create_sui_system_state_for_testing, stake_with, unstake};
-#[test_only]
-fun test_init() : (Clock,Random,Scenario,Storage)
-{
-    let mut sc = tests::begin(@0x0);
-    sui::random::create_for_testing(sc.ctx());
-    let clock = sui::clock::create_for_testing(sc.ctx());
-   
-
-    let mut effect = tests::next_tx(&mut sc,ADMIN_ADDR);
-    let random = sc.take_shared<Random>();
-    {
-        init(sc.ctx());
-    };
-    tests::next_tx(&mut sc,@0xa);
-    
-    let admin_cap = tests::take_from_address<AdminCap>(&sc, ADMIN_ADDR);
-    let operator_cap = tests::take_from_address<OperatorCap>(&sc, ADMIN_ADDR);
-    assign_operator(&admin_cap,operator_cap, OPERATOR_ADDR);
-    tests::return_to_address(ADMIN_ADDR,admin_cap);
-
-    set_up_sui_system_state(vector[@0x1, @0x2]);
-    {
-        sc.next_tx(@0x0);
-        let mut system_state = sc.take_shared<SuiSystemState>();
-        let staking_pool = system_state.active_validator_by_address(@0x1);
-        tests::return_shared(system_state);
-       
-        // .get_staking_pool_ref();
-        // assert!(staking_pool.pending_stake_amount() == 0, 0);
-        // assert!(staking_pool.pending_stake_withdraw_amount() == 0, 0);
-        // assert!(staking_pool.sui_balance() == 100 * 1_000_000_000, 0);
-        // tests::return_shared(system_state);
-    };
-
-    sc.next_tx(@0x0);
-    let storage = tests::take_shared<Storage>(&sc);
-    (clock,random,sc,storage)
-
-}
 
 #[test_only]
-fun test_finish(clock : Clock,
-            random: Random,
-            sc :Scenario,
-            storage:Storage){
-    tests::return_shared(random);
-    tests::return_shared(storage);
-    test_utils::destroy(clock);
-    tests::end(sc);
-}
-
-fun log<T>(prompt : vector<u8>,  obj: &T ){
-    print(&prompt.to_string());
-    print(obj);
-}
-
-#[test]
-fun test_deposit(){
-    let  (clock,random,mut sc,mut storage) = test_init();
-    let mut system_state = sc.take_shared<SuiSystemState>();
-    let amount = 50_000_000_000;
-    let amount2 = 5_000_000_000;
-    tests::next_tx(&mut sc, USER1_ADDR);
-    {
-    
-        let coin = coin::mint_for_testing(amount, sc.ctx());
-        deposit(&clock, &mut storage, &mut system_state,
-                VALIDATOR1_ADDR, coin, sc.ctx());
-
-        let share = get_share_by_user(&storage, USER1_ADDR);
-        assert_eq(share, amount);
-        assert_eq(storage.total_staked ,amount);
-        assert_eq(storage.total_shares,amount);
-        let user_info = query_user_info(&storage,sc.ctx());
-        assert_eq(user_info.id , USER1_ADDR);
-        assert_eq(user_info.orignal_amount, amount);
-        assert_eq(user_info.reward, 0);
-        let effect = tests::next_tx(&mut sc,USER1_ADDR);
-        
-        let user_share = get_share_by_user(&storage, USER1_ADDR);
-        assert_eq(share , amount );
-    };
-
-
-    tests::next_tx(&mut sc, USER2_ADDR);
-    {
-        let coin = coin::mint_for_testing(amount2, sc.ctx());
-        deposit(&clock, &mut storage, &mut system_state,
-                VALIDATOR1_ADDR, coin, sc.ctx());
-
-        let share = get_share_by_user(&storage, USER2_ADDR);
-        assert_eq(share, amount2);
-        assert_eq(storage.total_staked ,amount + amount2);
-        let user_info = query_user_info(&storage,sc.ctx());
-        assert_eq(user_info.id , USER2_ADDR);
-        assert_eq(user_info.orignal_amount, amount2);
-        assert_eq(user_info.reward, 0);
-        
-        let share = get_share_by_user(&storage, USER2_ADDR);
-        assert_eq(share , amount2 );
-    };
-    
-
-        tests::next_tx(&mut sc, USER1_ADDR);
-    {
-        let withdraw_amount = 3_000_000_000;
-        entry_withdraw(&clock, &mut storage, &mut system_state,
-                             withdraw_amount, sc.ctx());
-
-        log(b"user share:",storage.user_shares.borrow(USER1_ADDR));
-       
-        let share = get_share_by_user(&storage, USER1_ADDR);
-        assert_eq(share, amount - withdraw_amount);
-
-        assert_eq(storage.total_staked ,amount + amount2 - withdraw_amount);
-
-        let user_info = query_user_by_addr(&storage, USER2_ADDR);
-        assert_eq(user_info.id , USER2_ADDR);
-        assert_eq(user_info.orignal_amount, amount2);
-        assert_eq(user_info.reward, 0);
-
-        let user_info = query_user_info(&storage,sc.ctx());
-        assert_eq(user_info.id , USER1_ADDR);
-        assert_eq(user_info.orignal_amount, amount - withdraw_amount);
-        assert_eq(user_info.reward, 0);
-
-        let share = get_share_by_user(&storage, USER2_ADDR);
-        assert_eq(share , amount2 );
-    };
-
-
-    tests::return_shared(system_state);
-  
-    test_finish(clock, random,sc,storage);
-
-}
-
-#[test]
-fun test_hit_range(){
-    let  (clock,random,mut sc,mut storage) = test_init();
-    tests::next_tx(&mut sc, @0xc);
-
-    test_finish(clock, random,sc,storage);
-
-}
-
-
-#[test]
-fun test_point(){
-    let  (clock,random,mut sc,mut storage) = test_init();
-    tests::next_tx(&mut sc, @0xc);
-    let mut i = 0;
-    while(i < 10){
-        let val = create_random_point(&mut storage,&random,sc.ctx());
-        std::debug::print(&val);
-        i = i + 1;
-    };
-
-    test_finish(clock, random,  sc,storage);
+public fun init_for_testing(ctx : &mut TxContext){
+    init(ctx);
 }

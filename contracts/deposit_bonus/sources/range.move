@@ -1,11 +1,39 @@
 module deposit_bonus::range;
 use std::u256;
 use deposit_bonus::err_consts;
+use sui::address;
 #[test_only] use  sui::test_utils as tu;
 
 public struct Range has copy,drop{
     start : u256,
     end  : u256
+}
+
+fun to_hex(value : u256) :vector<u8>{
+    let addr = address::from_u256(value);
+    hex::encode(address::to_bytes(addr))
+}
+use sui::hex;
+public fun encode(range :&Range) : vector<u8>{
+    let mut msg = b"{start:";
+    msg.append( to_hex(range.start));
+    msg.append(b",\nend:");
+    msg.append(to_hex(range.end));
+    msg.append(b"}\n");
+    msg
+}
+
+public fun encode_ranges( ranges : &vector<Range>) : vector<u8>{
+    let mut ret = b"[";
+    let mut i = 0;
+    let len = ranges.length();
+    while(i < len){
+        let range = ranges.borrow(i);
+        ret.append( encode(range));
+        i = i + 1;
+    };
+    ret.append(b"]");
+    ret
 }
 
 public(package) fun create_range(start : u256,end : u256) :Range {
