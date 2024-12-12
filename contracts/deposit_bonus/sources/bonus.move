@@ -54,11 +54,3 @@ public fun add_user_bonus(period : &mut BonusPeriod,
 {
     period.bonus_list.push_back(bonus);
 }
-
-public struct AdminCap has key{ id : UID}
-
-fun init(ctx : &mut TxContext){
-    let cap = AdminCap {id : object::new(ctx)};
-    transfer::transfer(cap, ctx.sender());
-   
-}
