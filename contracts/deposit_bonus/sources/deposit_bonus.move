@@ -102,10 +102,15 @@ public struct BonusHistory has key{
     //user_recent_bonus : Table<address, address>,
 }
 
-public fun get_recent_record(bh : &BonusHistory) : &BonusPeriod {
-    let node = bh.history.back();
-    assert!(!node.is_none());
-    bh.history.borrow(* node.borrow())
+public fun get_recent_records(bh : &BonusHistory) : vector<BonusRecord> {
+    assert!(bh.times.length() > 0);
+    let period = bh.history.borrow(bh.times[bh.times.length() - 1]);
+    period.get_bonus_list()
+}
+
+public fun get_bonus_record(bh : &BonusHistory , t : u64) :vector<BonusRecord>{
+    let period = bh.history.borrow(t);
+    period.get_bonus_list()
 }
 
 public struct UserInfo has copy,drop{

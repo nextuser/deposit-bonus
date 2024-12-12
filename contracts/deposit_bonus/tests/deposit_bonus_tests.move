@@ -282,8 +282,8 @@ fun test_deposit_donate_allocate(){
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
                     
-        let period = history.get_recent_record();
-        log(b"bonus period 1",period);
+        let period = history.get_recent_records();
+        log(b"bonus period 1",&period);
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
@@ -306,8 +306,8 @@ fun test_deposit_donate_allocate(){
         db::withdraw_and_allocate_bonus(&operator_cap,&clock,&mut storage,
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
-        let period = history.get_recent_record();
-        log(b"bonus period 2",period);
+        let period = history.get_recent_records();
+        log(b"bonus period 2",&period);
                     
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
@@ -331,8 +331,8 @@ fun test_deposit_donate_allocate(){
         db::withdraw_and_allocate_bonus(&operator_cap,&clock,&mut storage,
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
-        let period = history.get_recent_record();
-        log(b"bonus period 3",period);
+        let period = history.get_recent_records();
+        log(b"bonus period 3",&period);
         
         let times = history.get_bonus_times();
         log(b"times:",&times);
