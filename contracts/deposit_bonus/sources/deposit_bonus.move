@@ -650,7 +650,7 @@ public(package) fun get_share(storage: & Storage,user : address) : &UserShare{
     linked_table::borrow(&storage.user_shares,user)
 }
 
-public(package) fun  query_user_by_addr(storage : &Storage, sender : address) : UserInfo
+public fun  query_user_by_addr(storage : &Storage, sender : address) : UserInfo
 {
     assert!(linked_table::contains(&storage.user_shares,sender),err_consts::account_not_exists!());
     
