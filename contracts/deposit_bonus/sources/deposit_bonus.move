@@ -1,7 +1,4 @@
-
-/// Module: deposit_bonus
 #[allow(unused_variable,unused_use)]
-
 module deposit_bonus::deposit_bonus;
 use std::hash;
 use std::u256;
@@ -99,8 +96,8 @@ public fun total_staked_amount(storage : &Storage) : u64{
 
 public struct BonusHistory has key{
     id : UID,
-    history : LinkedTable<u16,BonusPeriod>,//key  time_ms/(1 day ms)
-    hours : vector<u16>
+    history : LinkedTable<u64,BonusPeriod>,//key  time_ms/(1 day ms)
+    times : vector<u64>
     //user address => bonus record addr
     //user_recent_bonus : Table<address, address>,
 }
@@ -186,8 +183,8 @@ fun init(ctx : &mut TxContext){
 
     let h = BonusHistory{
         id : object::new(ctx),
-        history : linked_table::new<u16,BonusPeriod>(ctx),
-        hours : vector[]
+        history : linked_table::new<u64,BonusPeriod>(ctx),
+        times : vector[]
     };
     transfer::share_object(h);
 }
@@ -371,14 +368,14 @@ fun split_exact_balance(storage :&mut Storage, mut merge_balance :Balance<SUI>,a
     ret
 }
 
-
-entry fun get_bonus_records(bh :&BonusHistory,hour : u16) : vector<BonusRecord>{
-    let node : &BonusPeriod = bh.history.borrow(hour);
+// t : time in second
+entry fun get_bonus_records(bh :&BonusHistory,t : u64) : vector<BonusRecord>{
+    let node : &BonusPeriod = bh.history.borrow(t);
     node.get_bonus_list()
 }
 
-entry fun get_bonus_hours(bh :&BonusHistory) : vector<u16>{
-    bh.hours
+entry fun get_bonus_times(bh :&BonusHistory) : vector<u64>{
+    bh.times
 }
 /**
 when one user withdraw his share
@@ -441,7 +438,6 @@ fun withdraw_all_from_stake(storage :&mut Storage,
     
 }
 
-const HOUR_MS : u64 =  3600 * 1000;
 public(package) fun allocate_bonus(storage : &mut Storage,
                     balance_amount : u64, 
                     shares : &LinkedTable<address,u256>,
@@ -488,9 +484,9 @@ public(package) fun allocate_bonus(storage : &mut Storage,
         
         node = linked_table::next(shares,addr);
     };
-    let hour = (time_ms / HOUR_MS) as u16;
-    bonus_history.history.push_front(hour,period);
-    bonus_history.hours.push_back(hour as u16);
+    let t = (time_ms / 1000) ;
+    bonus_history.history.push_front(t,period);
+    bonus_history.times.push_back(t );
     
     sui::event::emit(allocate_event);
 }

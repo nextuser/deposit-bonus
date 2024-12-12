@@ -203,9 +203,10 @@ use deposit_bonus::bonus::BonusPeriod;
 fun test_deposit_donate_allocate(){
     let  (mut clock,random,mut sc,mut storage) = test_init();
     let mut system_state = sc.take_shared<SuiSystemState>();
-    let amount = 50_000_000_000;
-    let amount2 = 150_000_000_000;
-    let amount3  = 50_000_000_000;
+    let amount = 8000000000;
+    let amount2 = 4000000000;
+    let amount3  = 2000000000;
+    let donation_amount = 280000000;
     tests::next_tx(&mut sc, USER1_ADDR);
     {
     
@@ -267,7 +268,7 @@ fun test_deposit_donate_allocate(){
     //第一次捐款
     tests::next_tx(&mut sc, OPERATOR_ADDR);
     {
-        let coin = coin::mint_for_testing(2_000_000_000, sc.ctx());
+        let coin = coin::mint_for_testing(donation_amount, sc.ctx());
         db::donate_bonus(&mut storage, coin)
     };
     
@@ -292,7 +293,7 @@ fun test_deposit_donate_allocate(){
     //第二次捐款
     tests::next_tx(&mut sc, OPERATOR_ADDR);
     {
-        let coin = coin::mint_for_testing(2_000_000_000, sc.ctx());
+        let coin = coin::mint_for_testing(donation_amount, sc.ctx());
         db::donate_bonus(&mut storage, coin)
     };
 
@@ -342,7 +343,10 @@ fun test_deposit_donate_allocate(){
        
     };
 
-
+    clock.increment_for_testing(3600000);
+    {
+        //withdraw_and_allocate_bonus
+    };
     let time_ms  = clock.timestamp_ms();
     let hit_users = db::get_hit_users(&mut storage, &random,time_ms, sc.ctx());
     log(b"--------------hit users------------------\n",&db::convert_to_vector(&hit_users));
