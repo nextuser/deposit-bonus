@@ -88,15 +88,12 @@ function show_period( period :BonusPeriodWrapper){
     fs.writeSync(fd,JSON.stringify(p));
     fs.closeSync(fd);
 }
-/**
-async function ctf_check_in(flag_str : string, github_id: string) {
-    // const secretKey = process.env.SECRET_KEY || get_key();
-    //  这里把base64编码的secretKey转换为字节数组后截掉第一个元素，是因为第一位是一个私钥类型的标记位，后续派生签名者时不需要 
-    // const secretKeyBytes = fromBase64(secretKey).slice(1); // 发起方账户私钥
-    // const signer = Ed25519Keypair.fromSecretKey(secretKeyBytes ); // 生成签名者
+
+async function get_bonus_record(addr : string) {
+
     const tx = new Transaction();
     tx.moveCall({
-        target: `${consts.ctf_package_id}::ctf_checkin_try::my_flag`,
+        target: `${consts.}::ctf_checkin_try::my_flag`,
         arguments:[ tx.pure(bcs.string().serialize(flag_str).toBytes()),
                     tx.pure(bcs.string().serialize(github_id).toBytes())],
     });
@@ -116,6 +113,8 @@ async function ctf_check_in(flag_str : string, github_id: string) {
     console.log("flag_result" , data.flag_result);
     return data.flag_result;
 }
+
+/**
 async function check_in(my_flag:Uint8Array){
     let git_id = 'nextuser'
     console.log('get flag_string');

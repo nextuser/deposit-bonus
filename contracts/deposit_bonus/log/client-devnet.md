@@ -30,21 +30,15 @@ export USER_3=0xa23b00a9eb52d57b04e80b493385488b3b86b317e875f78e0252dfd1793496bb
 ```bash
 export VALIDATOR=0x94beb782ccfa172ea8752123e73768757a1f58cfca53928e9ba918a2c44a695b
 ```
-### 发布
+### 发布后设置环境变量
+
 
 ```bash
-
-sui client switch  --address $ADMIN
-sui client publish 
-
-```
-
-```bash
-export STORAGE=0xcd503861cbe2ba5462d4269e6af632f6a0ec1ef4b7c39a5af945a6d725901325
-export ADMIN_CAP=0xc9d3b7d31de4aa8c643e76c548d97acf9349fe95840b3bbcc6e16ee62b603728
-export OPERATOR_CAP=0x4c96255959d0f7ed6e85c1278e41cc3340137927e37cec78139e532340ca4ade
-export HISTORY=0x0100c85534b3711287e2f2c325c62c6c912cce9f264176cd82075c9d394842d8
-export PKG=0x6111dc755dbad7d647b66fbcc4777e319b61cbda0a4978c96933e2bd5ac707f8
+export STORAGE=0x5d21e1cbfc51e4ca478318f30dabe0d454305ae498815a023fa08393fe2b0a1b
+export ADMIN_CAP=0x6d23438d113ea13cdcb4e6b68b83908e2ea4eec37b01e796382d8d39e321e86c
+export OPERATOR_CAP=0x1c2537af4af20c29e851434a3d59882cb676940c2eabf77c1b54325e75106ba2
+export HISTORY=0x46d8d542ccd917e677d9cc75c008cef9c4a4b32fb3cf4e47606b0dda849e1843
+export PKG=0x48a8cf93186bf68b5209c85eaff44d2af8c18ab2086d2962ce72c9eae0bdef8
 ```
 
 
@@ -117,18 +111,26 @@ $PKG::deposit_bonus::withdraw_and_allocate_bonus @$OPERATOR_CAP \
 ```bash
 sui client switch --address $USER_1
 sui client ptb --move-call \
-$PKG::deposit_bonus::query_user_info @$STORAGE 
+$PKG::deposit_bonus::entry_query_user_info @$STORAGE 
 ```
 
 ```bash
 sui client switch --address $USER_2
 sui client ptb --move-call \
-$PKG::deposit_bonus::query_user_info @$STORAGE 
+$PKG::deposit_bonus::entry_query_user_info @$STORAGE 
 ```
+
+```bash
+sui client switch --address $USER_3
+sui client ptb --move-call \
+$PKG::deposit_bonus::entry_query_user_info @$STORAGE 
+```
+
 
 # user1 get bonus list
 ```bash
 sui client switch --address $USER_1
+ sui client object $STORAGE
 
 sui client ptb --move-call \
 $PKG::deposit_bonus::get_recent_records @$HISTORY
