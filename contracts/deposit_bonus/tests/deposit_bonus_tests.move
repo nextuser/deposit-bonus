@@ -198,6 +198,18 @@ fun test_point(){
     test_finish(clock, random,  sc,storage);
 }
 
+fun print_recent_period(sc : &mut Scenario){
+
+        tests::next_tx(sc,@0xb);
+        // shared object can be take after the transaction
+        let mut bh = tests::take_shared<db::BonusHistory>(sc);
+        let addr = bh.get_recent_period();
+        let p = tests::take_immutable_by_id<BonusPeriod>(sc, addr.to_id());
+        log(b"bonus period 1", &p);
+        tests::return_immutable(p);
+        tests::return_shared(bh);
+       
+}
 use deposit_bonus::bonus::BonusPeriod;
 #[test]
 fun test_deposit_donate_allocate(){
@@ -282,12 +294,12 @@ fun test_deposit_donate_allocate(){
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
                     
-        let period = history.get_recent_records();
-        log(b"bonus period 1",&period);
+        
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
     };
+    print_recent_period(&mut sc);
 
 
     //第二次捐款
@@ -306,13 +318,14 @@ fun test_deposit_donate_allocate(){
         db::withdraw_and_allocate_bonus(&operator_cap,&clock,&mut storage,
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
-        let period = history.get_recent_records();
-        log(b"bonus period 2",&period);
-                    
+        
+       
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
     };
+
+     print_recent_period(&mut sc);
 
 
     //第三次捐款
@@ -331,17 +344,13 @@ fun test_deposit_donate_allocate(){
         db::withdraw_and_allocate_bonus(&operator_cap,&clock,&mut storage,
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
-        let period = history.get_recent_records();
-        log(b"bonus period 3",&period);
         
-        let times = history.get_bonus_times();
-        log(b"times:",&times);
-        let records = history.get_bonus_records(times[times.length() - 1]);
-        log(b"records:", &records);
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
     };
+
+    print_recent_period(&mut sc);
 
     let time_ms  = clock.timestamp_ms();
     let hit_users = db::get_hit_users(&mut storage, &random,time_ms, sc.ctx());

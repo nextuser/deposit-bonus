@@ -2,7 +2,7 @@
 module deposit_bonus::bonus;
 use sui::clock::{Self,Clock};
 
-public struct BonusRecord has store,copy,drop{
+public struct BonusRecord has store,copy{
     id : address,
     gain : u64, //抽奖收获
     pay : u64, //抽奖开销
@@ -51,7 +51,7 @@ entry  fun create_period(clock : &Clock,
     transfer::transfer(p,ctx.sender());
 }
 
-public fun add_user_bonus(period : &mut BonusPeriod, 
+public(package) fun add_record(period : &mut BonusPeriod, 
                           bonus : BonusRecord)
 {
     period.bonus_list.push_back(bonus);

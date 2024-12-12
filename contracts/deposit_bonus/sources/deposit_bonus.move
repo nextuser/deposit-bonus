@@ -96,22 +96,20 @@ public fun total_staked_amount(storage : &Storage) : u64{
 
 public struct BonusHistory has key{
     id : UID,
-    history : LinkedTable<u64,BonusPeriod>,//key  time_ms/(1 day ms)
-    times : vector<u64>
+    // history : LinkedTable<u64,BonusPeriod>,//key  time_ms/(1 day ms)
+    // times : vector<u64>,
+    periods : vector<address>
     //user address => bonus record addr
     //user_recent_bonus : Table<address, address>,
 }
 
-public fun get_recent_records(bh : &BonusHistory) : vector<BonusRecord> {
-    assert!(bh.times.length() > 0);
-    let period = bh.history.borrow(bh.times[bh.times.length() - 1]);
-    period.get_bonus_list()
+public fun get_recent_period(bh : &BonusHistory) : address {
+    let len = bh.periods.length();
+    assert!(len > 0);
+    * bh.periods.borrow(len -1 )
 }
 
-public fun get_bonus_record(bh : &BonusHistory , t : u64) :vector<BonusRecord>{
-    let period = bh.history.borrow(t);
-    period.get_bonus_list()
-}
+
 
 public struct UserInfo has copy,drop{
     id : address,
@@ -188,8 +186,10 @@ fun init(ctx : &mut TxContext){
 
     let h = BonusHistory{
         id : object::new(ctx),
-        history : linked_table::new<u64,BonusPeriod>(ctx),
-        times : vector[]
+        // history : linked_table::new<u64,BonusPeriod>(ctx),
+        periods : vector[],
+        // times : vector[]
+        
     };
     transfer::share_object(h);
 }
@@ -374,14 +374,12 @@ fun split_exact_balance(storage :&mut Storage, mut merge_balance :Balance<SUI>,a
 }
 
 // t : time in second
-entry fun get_bonus_records(bh :&BonusHistory,t : u64) : vector<BonusRecord>{
-    let node : &BonusPeriod = bh.history.borrow(t);
-    node.get_bonus_list()
-}
+// entry fun get_bonus_records(bh :&BonusHistory,t : u64) : vector<BonusRecord>{
+//     let node : &BonusPeriod = bh.history.borrow(t);
+//     node.get_bonus_list()
+// }
 
-entry fun get_bonus_times(bh :&BonusHistory) : vector<u64>{
-    bh.times
-}
+
 /**
 when one user withdraw his share
 */
@@ -450,7 +448,7 @@ public(package) fun allocate_bonus(storage : &mut Storage,
                     bonus_history :&mut BonusHistory,
                     ctx :&mut TxContext){
     let mut total = 0;
-    let mut period = bonus::create_bonus_period(time_ms,ctx);
+    
 
     let mut allocate_event = AllocateEvent {
            users : vector[],
@@ -467,6 +465,9 @@ public(package) fun allocate_bonus(storage : &mut Storage,
     };
     log(b"total hit:", &total);
     log(b"total balance" , &balance_amount);
+
+    let mut bonus_period :BonusPeriod = bonus::create_bonus_period(time_ms,ctx);
+
     node = linked_table::front(shares);
     while(!option::is_none(node)){
         let addr = * node.borrow();
@@ -480,7 +481,7 @@ public(package) fun allocate_bonus(storage : &mut Storage,
         let pay = (user_share.share_amount as u128)* (balance_amount as u128)/ (storage.total_shares as u128);
         let record = bonus::create_bonus_record(addr ,  gain as u64,
                                                         pay as u64, user_share.original_money) ;
-        bonus::add_user_bonus(&mut period, record);
+        bonus_period.add_record( record);
         user_share.bonus = gain as u64;
         vector::push_back(&mut allocate_event.users, Share{
             id : addr,
@@ -489,10 +490,9 @@ public(package) fun allocate_bonus(storage : &mut Storage,
         
         node = linked_table::next(shares,addr);
     };
-    let t = (time_ms / 1000) ;
-    bonus_history.history.push_front(t,period);
-    bonus_history.times.push_back(t );
-    
+
+    bonus_history.periods.push_back(object::id(&bonus_period).to_address());
+    transfer::public_freeze_object(bonus_period);
     sui::event::emit(allocate_event);
 }
 
