@@ -77,6 +77,7 @@ public struct Storage has key,store{
     staked_suis : vector<StakedSui>,
     left_balance : Balance<SUI>,
     bonus_balance : Balance<SUI>,
+    bonus_donated : Balance<SUI>,
     bonus_percent : u32,
     fee_percent : u32,
     seed : u256,
@@ -95,6 +96,12 @@ public struct BonusHistory has key{
     history : vector<address>,
     //user address => bonus record addr
     //user_recent_bonus : Table<address, address>,
+}
+
+public fun get_recent_record(bh : &BonusHistory) : address {
+    let len = bh.history.length();
+    assert!(len > 0);
+    *bh.history.borrow(len -1)
 }
 public struct UserInfo has copy,drop{
     id : address,
@@ -157,6 +164,7 @@ fun new_storage(ctx : &mut TxContext) : Storage{
         staked_suis : vector[],
         left_balance : balance::zero<SUI>(),
         bonus_balance :  balance::zero<SUI>(),
+        bonus_donated : balance::zero<SUI>(),
         bonus_percent : 5000 ,//50%
         fee_percent : 500, //base point , 5%
         seed : seed,
@@ -442,9 +450,12 @@ public(package) fun allocate_bonus(storage : &mut Storage,
         let addr = * node.borrow();
         let amount = shares.borrow(addr);
         total = total + *amount;
+        log(b"user:",&addr);
+        log(b"overlapped:",amount);
         node = shares.next(addr);
     };
-    
+    log(b"total hit:", &total);
+    log(b"total balance" , &balance_amount);
     node = linked_table::front(shares);
     while(!option::is_none(node)){
         let addr = * node.borrow();
@@ -455,9 +466,9 @@ public(package) fun allocate_bonus(storage : &mut Storage,
         //let coin = coin::from_balance(gain_balance, ctx);
         
         let user_share =   storage.user_shares.borrow_mut(addr);
-        let pay = (user_share.share_amount * balance_amount )/ storage.total_shares;
+        let pay = (user_share.share_amount as u128)* (balance_amount as u128)/ (storage.total_shares as u128);
         let record = bonus::create_bonus_record(addr ,  gain as u64,
-                                                        pay , user_share.original_money) ;
+                                                        pay as u64, user_share.original_money) ;
         bonus::add_user_bonus(&mut period, record);
         user_share.bonus = gain as u64;
         vector::push_back(&mut allocate_event.users, Share{
@@ -480,11 +491,17 @@ fun bonus_calc(storage :&mut Storage,
                 ctx: &mut TxContext){
 
     let percent = storage.bonus_percent as u128;
-    let bonus_amount = ((total_rewards as u128) * percent / (PERCENT_MAX as u128)) as u64;
-    let bonus = balance::split(&mut storage.left_balance, bonus_amount);
-    storage.bonus_balance.join(bonus);
-    let shares =  get_hit_users(storage,random, ctx);
-    allocate_bonus(storage,bonus_amount,&shares,time_ms,bonus_history,ctx);
+    let  bonus_amount = ((total_rewards as u128) * percent / (PERCENT_MAX as u128)) as u64;
+    let mut bonus = balance::split(&mut storage.left_balance, bonus_amount);
+    let donated_amount = storage.bonus_donated.value();
+    bonus.join(storage.bonus_donated.split(donated_amount));
+    let total_bonus  = bonus_amount + donated_amount;
+
+    storage.bonus_balance.join(bonus);    
+    log(b"--------total bonus------- ",&total_bonus);
+
+    let shares =  get_hit_users(storage,random,time_ms, ctx);
+    allocate_bonus(storage,total_bonus,&shares,time_ms,bonus_history,ctx);
     linked_table::drop(shares);
 }
 
@@ -492,7 +509,7 @@ fun bonus_calc(storage :&mut Storage,
 dapp call this function periodically ,
 the OperatorCap owner key will be deplayed in server
 */
-entry fun withdraw_and_allocate_bonus(_ : &OperatorCap,
+public(package) entry fun withdraw_and_allocate_bonus(_ : &OperatorCap,
                                     clock : &Clock,
                                     storage :&mut Storage,
                                     wrapper : &mut SuiSystemState,
@@ -503,16 +520,20 @@ entry fun withdraw_and_allocate_bonus(_ : &OperatorCap,
     let time_ms = clock::timestamp_ms(clock);
     let (old,new ) = withdraw_all_from_stake(storage, wrapper, ctx);
     assert!(old <= new);
+    log(b"old",&old);
+    log(b"new",&new);
+    
     let total_rewards = new - old;
     bonus_calc(storage, random,total_rewards,time_ms,bonus_history, ctx);
     stake_left_balance(storage, wrapper,  validator_address, ctx)
 }
 
-public(package) fun create_random_point(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : u256{
+public(package) fun create_random_point(storage : &mut Storage,random :&Random ,time_ms : u64, ctx : &mut TxContext) : u256{
     let mut g = random.new_generator(ctx);
     let mut full_proof: vector<u8> = vector::empty<u8>();
-    vector::append<u8>(&mut full_proof, bcs::to_bytes(&storage.seed));
-    vector::append<u8>(&mut full_proof, bcs::to_bytes(&storage.left_balance.value()));
+    full_proof.append( bcs::to_bytes(&storage.seed));
+    full_proof.append(bcs::to_bytes(&time_ms));
+    full_proof.append(bcs::to_bytes(&storage.left_balance.value()));
     let chall_bytes =  bcs::to_bytes(&g.generate_u256());
     let hash: vector<u8> = hash::sha3_256(full_proof);
     assert!(hash.length() == 32);
@@ -530,16 +551,20 @@ fun get_percent_range( point : u256,_percent:u32) : vector<Range>{
 
 public(package) fun get_hit_range(storage : &mut Storage,
                                 random :&Random , 
+                                time_ms : u64,
                                 ctx : &mut TxContext) : vector<Range>
 {
-    let random_point = create_random_point(storage, random, ctx);
+    let random_point = create_random_point(storage, random,time_ms, ctx);
     let hit_ranges = get_percent_range(random_point, storage.bonus_percent );
     hit_ranges
 }
 
-public(package) fun get_hit_users(storage : &mut Storage,random :&Random , ctx : &mut TxContext) : LinkedTable<address,u256>
+public(package) fun get_hit_users(storage : &mut Storage,
+                                    random :&Random ,
+                                    time_ms : u64, 
+                                    ctx : &mut TxContext) : LinkedTable<address,u256>
 {
-    let hit_ranges = get_hit_range(storage, random, ctx);
+    let hit_ranges = get_hit_range(storage, random,time_ms, ctx);
     let user_shares = &storage.user_shares;
     let mut node = linked_table::front(&storage.user_shares);
     let mut hit_user_shares = linked_table::new<address,u256>(ctx);
@@ -697,4 +722,9 @@ entry fun entry_withdraw_bonus(storage : &mut Storage, amount : u64 ,ctx : &mut 
 #[test_only]
 public fun init_for_testing(ctx : &mut TxContext){
     init(ctx);
+}
+
+
+public(package) entry fun donate_bonus(storage : &mut Storage, coin : Coin<SUI>){
+    storage.bonus_donated.join(coin.into_balance());
 }
