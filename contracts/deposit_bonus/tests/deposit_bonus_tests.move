@@ -334,19 +334,15 @@ fun test_deposit_donate_allocate(){
         let period = history.get_recent_record();
         log(b"bonus period 3",period);
         
-        let hours = history.get_bonus_hours();
-        log(b"hours:",&hours);
-        let records = history.get_bonus_records(hours[hours.length() - 1]);
+        let times = history.get_bonus_times();
+        log(b"times:",&times);
+        let records = history.get_bonus_records(times[times.length() - 1]);
         log(b"records:", &records);
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
     };
 
-    clock.increment_for_testing(3600000);
-    {
-        //withdraw_and_allocate_bonus
-    };
     let time_ms  = clock.timestamp_ms();
     let hit_users = db::get_hit_users(&mut storage, &random,time_ms, sc.ctx());
     log(b"--------------hit users------------------\n",&db::convert_to_vector(&hit_users));
