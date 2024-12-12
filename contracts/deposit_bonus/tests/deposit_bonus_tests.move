@@ -201,7 +201,7 @@ fun test_point(){
 use deposit_bonus::bonus::BonusPeriod;
 #[test]
 fun test_deposit_donate_allocate(){
-    let  (clock,random,mut sc,mut storage) = test_init();
+    let  (mut clock,random,mut sc,mut storage) = test_init();
     let mut system_state = sc.take_shared<SuiSystemState>();
     let amount = 50_000_000_000;
     let amount2 = 150_000_000_000;
@@ -227,7 +227,7 @@ fun test_deposit_donate_allocate(){
         assert_eq(share_amount , amount );
     };
 
-
+    clock.increment_for_testing(3600000);
     tests::next_tx(&mut sc, USER2_ADDR);
     {
         let coin = coin::mint_for_testing(amount2, sc.ctx());
@@ -246,8 +246,8 @@ fun test_deposit_donate_allocate(){
         assert_eq(share , amount2 );
     };
     
-
-      tests::next_tx(&mut sc, USER3_ADDR);
+    clock.increment_for_testing(3600000);
+    tests::next_tx(&mut sc, USER3_ADDR);
     {
         let coin = coin::mint_for_testing(amount3, sc.ctx());
         deposit(&clock, &mut storage, &mut system_state,
@@ -270,7 +270,9 @@ fun test_deposit_donate_allocate(){
         let coin = coin::mint_for_testing(2_000_000_000, sc.ctx());
         db::donate_bonus(&mut storage, coin)
     };
-    let  mut record_addr;
+    
+    //分配奖金
+    clock.increment_for_testing(3600000);
     tests::next_tx(&mut sc, OPERATOR_ADDR);
     {
         let operator_cap = tests::take_from_sender<OperatorCap>(&sc);
@@ -279,20 +281,14 @@ fun test_deposit_donate_allocate(){
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
                     
-        record_addr = history.get_recent_record();
-
+        let period = history.get_recent_record();
+        log(b"bonus period 1",period);
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
     };
 
-    // 显示第一次抽奖结果
-    tests::next_tx(&mut sc, OPERATOR_ADDR);
-    {
-        let p = tests::take_shared_by_id<BonusPeriod>(&sc,  record_addr.to_id());
-        log(b"-------bonus history 1----",&p);    
-        tests::return_shared(p);
-    };
+
     //第二次捐款
     tests::next_tx(&mut sc, OPERATOR_ADDR);
     {
@@ -301,25 +297,22 @@ fun test_deposit_donate_allocate(){
     };
 
     //第二次抽奖
+    //分配奖金
+    clock.increment_for_testing(3600000);
     {
         let operator_cap = tests::take_from_sender<OperatorCap>(&sc);
         let mut history = tests::take_shared<db::BonusHistory>(&sc);
         db::withdraw_and_allocate_bonus(&operator_cap,&clock,&mut storage,
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
-        record_addr = history.get_recent_record();
+        let period = history.get_recent_record();
+        log(b"bonus period 2",period);
                     
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
     };
-    //显示第二次抽奖结果
-    tests::next_tx(&mut sc, OPERATOR_ADDR);
-    {
-        let p = tests::take_shared_by_id<BonusPeriod>(&sc, record_addr.to_id());
-        log(b"-------bonus history 2----",&p); 
-        tests::return_shared(p);   
-    };
+
 
     //第三次捐款
     tests::next_tx(&mut sc, OPERATOR_ADDR);
@@ -329,25 +322,27 @@ fun test_deposit_donate_allocate(){
     };
 
     //第三次抽奖
+    //分配奖金
+    clock.increment_for_testing(3600000);
     {
         let operator_cap = tests::take_from_sender<OperatorCap>(&sc);
         let mut history = tests::take_shared<db::BonusHistory>(&sc);
         db::withdraw_and_allocate_bonus(&operator_cap,&clock,&mut storage,
                                         &mut system_state,&random,VALIDATOR1_ADDR,
                                         &mut history,sc.ctx());
-        record_addr = history.get_recent_record();
-                    
+        let period = history.get_recent_record();
+        log(b"bonus period 3",period);
+        
+        let hours = history.get_bonus_hours();
+        log(b"hours:",&hours);
+        let records = history.get_bonus_records(hours[hours.length() - 1]);
+        log(b"records:", &records);
         tests::return_shared(history);
         tests::return_to_sender(&sc, operator_cap);
        
     };
-    //显示第三次抽奖结果
-    tests::next_tx(&mut sc, OPERATOR_ADDR);
-    {
-        let p = tests::take_shared_by_id<BonusPeriod>(&sc, record_addr.to_id());
-        log(b"-------bonus history 3----",&p); 
-        tests::return_shared(p);   
-    };
+
+
     let time_ms  = clock.timestamp_ms();
     let hit_users = db::get_hit_users(&mut storage, &random,time_ms, sc.ctx());
     log(b"--------------hit users------------------\n",&db::convert_to_vector(&hit_users));

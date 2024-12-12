@@ -27,15 +27,16 @@ This template uses `testnet` by default, so we'll need to set up a testnet
 environment in the CLI:
 
 ```bash
-sui client new-env --alias testnet --rpc https://fullnode.testnet.sui.io:443
-sui client switch --env testnet
+sui client new-env --alias devnet --rpc https://fullnode.devnet.sui.io:443
+sui client switch --env devnet
 ```
+
 
 If you haven't set up an address in the sui client yet, you can use the
 following command to get a new address:
 
 ```bash
-sui client new-address secp256k1
+sui client new-address ed25519
 ```
 
 This well generate a new address and recover phrase for you. You can mark a

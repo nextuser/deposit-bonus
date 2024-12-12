@@ -27,7 +27,7 @@ type UserBonus ={
 }
 
 
-type BonusPeriod = {
+type BonusRecord = {
     id : string,
     time_ms : number,
     epoch : number,
@@ -40,7 +40,7 @@ type BonusWrapper = {
     fields : UserBonus
 }
 
-type BonusPeriodWrapper = {
+type BonusRecordWrapper = {
     id : string,
     time_ms : number,
     epoch : number,
@@ -60,15 +60,15 @@ async function get_object(){
             });
     console.log(result);
     let content  = result.data!.content! as unknown as {fields : any };
-    let period = content.fields as unknown as BonusPeriodWrapper;
+    let period = content.fields as unknown as BonusRecordWrapper;
     console.log("----------fields---------------")
 
     console.log(period);
     return period
 }
 
-function show_period( period :BonusPeriodWrapper){
-    let p : BonusPeriod = {
+function show_period( period :BonusRecordWrapper){
+    let p : BonusRecord = {
         id : period.id,
         epoch : period.epoch,
         time_ms : period.time_ms,

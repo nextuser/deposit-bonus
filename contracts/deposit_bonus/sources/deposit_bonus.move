@@ -18,10 +18,16 @@ use deposit_bonus::err_consts;
 use sui_system::staking_pool::{StakedSui, Self};
 use sui_system::sui_system::{Self,SuiSystemState,request_withdraw_stake_non_entry,request_add_stake_non_entry};
 use deposit_bonus::range::Range;
-use deposit_bonus::bonus;
+use deposit_bonus::bonus::{Self,BonusPeriod,BonusRecord};
 use sui::linked_table::{Self,LinkedTable};
 use std::debug::print;
 use deposit_bonus::utils::log;
+
+const PERCENT_MAX:u32 = 10000; //100%
+const FeeLimit : u32 = 1000; // 10%
+const BonusLimit : u32 = 10000; // 100%  
+public struct AdminCap has key { id : UID}
+public struct OperatorCap has key{id : UID}
 
 public struct DepositEvent has copy,drop{
     user : address,
@@ -93,16 +99,18 @@ public fun total_staked_amount(storage : &Storage) : u64{
 
 public struct BonusHistory has key{
     id : UID,
-    history : vector<address>,
+    history : LinkedTable<u16,BonusPeriod>,//key  time_ms/(1 day ms)
+    hours : vector<u16>
     //user address => bonus record addr
     //user_recent_bonus : Table<address, address>,
 }
 
-public fun get_recent_record(bh : &BonusHistory) : address {
-    let len = bh.history.length();
-    assert!(len > 0);
-    *bh.history.borrow(len -1)
+public fun get_recent_record(bh : &BonusHistory) : &BonusPeriod {
+    let node = bh.history.back();
+    assert!(!node.is_none());
+    bh.history.borrow(* node.borrow())
 }
+
 public struct UserInfo has copy,drop{
     id : address,
     orignal_amount : u64,
@@ -124,13 +132,6 @@ public fun user_reward(info :&UserInfo) : u64 {
 public fun user_orignal_amount(info :&UserInfo) : u64 {
     info.orignal_amount
 }
-
-
-const PERCENT_MAX:u32 = 10000; //100%
-const FeeLimit : u32 = 1000; // 10%
-const BonusLimit : u32 = 10000; // 100%  
-public struct AdminCap has key { id : UID}
-public struct OperatorCap has key{id : UID}
 
 //todo ,no use in v1.0
 public struct Card has key,store{
@@ -185,12 +186,11 @@ fun init(ctx : &mut TxContext){
 
     let h = BonusHistory{
         id : object::new(ctx),
-        history : vector[]
+        history : linked_table::new<u16,BonusPeriod>(ctx),
+        hours : vector[]
     };
     transfer::share_object(h);
 }
-
-
 
 fun money_to_share(storage :& Storage, money : u64) : u64{
     
@@ -371,6 +371,15 @@ fun split_exact_balance(storage :&mut Storage, mut merge_balance :Balance<SUI>,a
     ret
 }
 
+
+entry fun get_bonus_records(bh :&BonusHistory,hour : u16) : vector<BonusRecord>{
+    let node : &BonusPeriod = bh.history.borrow(hour);
+    node.get_bonus_list()
+}
+
+entry fun get_bonus_hours(bh :&BonusHistory) : vector<u16>{
+    bh.hours
+}
 /**
 when one user withdraw his share
 */
@@ -432,6 +441,7 @@ fun withdraw_all_from_stake(storage :&mut Storage,
     
 }
 
+const HOUR_MS : u64 =  3600 * 1000;
 public(package) fun allocate_bonus(storage : &mut Storage,
                     balance_amount : u64, 
                     shares : &LinkedTable<address,u256>,
@@ -478,8 +488,10 @@ public(package) fun allocate_bonus(storage : &mut Storage,
         
         node = linked_table::next(shares,addr);
     };
-    bonus_history.history.push_back(object::id(&period).to_address());
-    transfer::public_share_object(period);
+    let hour = (time_ms / HOUR_MS) as u16;
+    bonus_history.history.push_front(hour,period);
+    bonus_history.hours.push_back(hour as u16);
+    
     sui::event::emit(allocate_event);
 }
 
