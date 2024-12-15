@@ -1,11 +1,3 @@
-* [readme english version](./readme_en.md)
-
-# project: 
-
-## members Participant：
-
-
-
 ## project
 - 项目名称:储蓄有奖系统
 > 描述: 
