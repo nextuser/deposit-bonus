@@ -1,0 +1,1 @@
+sui client publish |tee ./log/publish-devnet.log
