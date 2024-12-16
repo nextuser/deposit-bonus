@@ -48,6 +48,7 @@ const WithdrawUI = (props : {user_info:UserShare,
           <div>你的奖金: {sui_show(user_info.bonus)} </div>
           <hr></hr>
           <div>你的钱包余额: {sui_show(props.balance)} </div>
+          <div>你的地址:{useCurrentAccount()!.address}</div>
         </div>
         <select onChange={ (e) =>{console.log(e);  props.change_period(e.target.value)  }}>
             {

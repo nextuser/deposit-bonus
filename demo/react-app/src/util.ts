@@ -7,7 +7,8 @@ export function to_date_str(time_ms : number) : string{
 
 const SUI_OVER_FROST = 1e9;
 export function sui_show( amount : number) : string{
-   let ret =   ` ${amount/SUI_OVER_FROST} SUI`;
+  amount = Math.abs(amount) < 1 ? 0 : amount; 
+  let ret =   ` ${(amount/SUI_OVER_FROST).toFixed(9)} SUI`;
    
    return ret;
                          
