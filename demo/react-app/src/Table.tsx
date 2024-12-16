@@ -52,15 +52,11 @@ const columns: ColumnsType<BonusRecord> = [
   },
 
   {
-    title: "原始本金",
+    title: "中奖时本金",
     dataIndex: "principal",
     key: "principal",
   },
-  {
-    title: "现有资产",
-    dataIndex: "asset",
-    key: "asset",
-  }, 
+
   {
     title: "奖金",
     dataIndex: "gain",
