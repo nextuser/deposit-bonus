@@ -24,7 +24,7 @@ const WithdrawUI = (props : {user_info:UserShare,
 
   return (
     <div>
-      <div>MAX: {sui_show(max_value)} </div>
+      <div>最大可提取金额: {sui_show(max_value)} </div>
       <Space.Compact style={{ marginBottom: 20 }}>
         <Input
           style={{ width: "60%", marginRight: 10 }}
@@ -42,9 +42,12 @@ const WithdrawUI = (props : {user_info:UserShare,
       
       <div style={{ marginBottom: 20 }}>
         <div style={{ marginBottom: 10 }}>
-          <div>你的钱包余额: {sui_show(props.balance)} </div>
-          <div>你的资产: {sui_show(user_info.asset)} </div>
+
+          <div>你的资产: {sui_show(user_info.original_money)} </div>
+          <div>你的利息: {sui_show( (user_info.asset - user_info.original_money))} </div>
           <div>你的奖金: {sui_show(user_info.bonus)} </div>
+          <hr></hr>
+          <div>你的钱包余额: {sui_show(props.balance)} </div>
         </div>
         <select onChange={ (e) =>{console.log(e);  props.change_period(e.target.value)  }}>
             {

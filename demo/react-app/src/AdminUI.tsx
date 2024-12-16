@@ -23,7 +23,7 @@ const AdminUI = (props : {user_info : UserShare,
   return (
     <div>
       <div>
-        <div>MAX：{sui_show(max_value)}</div>
+        <div>费用余额：{sui_show(max_value)}</div>
         <Space.Compact style={{ marginBottom: 20 }}>
           <Input
             style={{ width: "60%", marginRight: 10 }}

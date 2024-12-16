@@ -27,7 +27,7 @@ const DepositUI = (props : {user_info:UserShare,
 
   return (
     <div>
-      <div>MAX：{sui_show(max)}</div>
+      <div>钱包余额：{sui_show(max)}</div>
       <Space.Compact style={{ marginBottom: 20 }}>
         <Input
           style={{ width: "60%", marginRight: 10 }}
@@ -45,9 +45,9 @@ const DepositUI = (props : {user_info:UserShare,
       
       <div style={{ marginBottom: 20 }}>
         <div style={{ marginBottom: 10 }}>
-          <div>你的存款: {sui_show(user_info.original_money)} </div>
+          <div>你的资产: {sui_show(user_info.original_money)} </div>
           <div>你的利息: {sui_show( (user_info.asset - user_info.original_money))} </div>
-          <div>你的中奖: {sui_show(user_info.bonus)} </div>
+          <div>你的奖金: {sui_show(user_info.bonus)} </div>
         </div>
         <select onChange={ (e) =>{console.log(e);  props.change_period(e.target.value)  }}>
             {

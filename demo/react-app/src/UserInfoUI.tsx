@@ -189,7 +189,7 @@ const UserInfoUI = (props: { onSelectPeriod: (address: string) => void }) => {
     query_user_info();
     query_operator();
     get_admin(suiClient).then((owner) => { set_admin(owner) })
-  }, []);
+  }, [account]);
 
   useEffect(query_storage, []);
 
