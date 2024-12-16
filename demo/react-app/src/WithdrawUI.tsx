@@ -58,7 +58,6 @@ const WithdrawUI = (props : {user_info:UserShare,
 
             }
         </select>
-        <div>距离下次开奖还有23小时23分钟</div>
       </div>
     </div>
   );

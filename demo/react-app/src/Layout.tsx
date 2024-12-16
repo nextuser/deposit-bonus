@@ -2,18 +2,18 @@ import React from "react";
 import UserInfoUI from "./UserInfoUI";
 import TableUI from "./Table";
 import { useState } from "react";
-
+import { BonusPeriodWrapper } from "./contract_types";
 const App: React.FC = () => {
-  let [period_addr,set_period_addr] = useState<string>();
+  let [period,set_period] = useState<BonusPeriodWrapper|null>(null);
 
-  let change_period = (addr : string )=>{
-    set_period_addr(addr);
+  let change_period = (period : BonusPeriodWrapper|null )=>{
+    set_period(period);
   };
 
   return (
     <div style={{ padding: 20 }}>
       <UserInfoUI onSelectPeriod={change_period}/>
-      <TableUI period_id = {period_addr}/>
+      <TableUI period = {period}/>
     </div>
   );
 };

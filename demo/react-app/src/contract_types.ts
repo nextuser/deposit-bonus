@@ -4,6 +4,7 @@ export type BonusRecord = {
     pay: number,
     pay_rate: number
     principal: number,
+    asset : number,
 }
 
 export type OperatorCap ={
@@ -37,6 +38,8 @@ export type BonusPeriodWrapper = {
     id: {id:string},
     time_ms: number,
     epoch: number,
+    seed :number,
+    percent : number,
     bonus_list: BonusWrapper[]
 }
 

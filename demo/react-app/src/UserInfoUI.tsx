@@ -35,7 +35,7 @@ function check_max(value: string, max: number): number {
   }
   return Math.round(amount * 1e9);
 }
-const UserInfoUI = (props: { onSelectPeriod: (address: string) => void }) => {
+const UserInfoUI = (props: { onSelectPeriod: (period: BonusPeriodWrapper) => void }) => {
   let [storage, set_storage] = useState<StorageData | null>(null)
   let [is_operator, set_operator] = useState(false);
   let [admin, set_admin] = useState("");
@@ -45,7 +45,9 @@ const UserInfoUI = (props: { onSelectPeriod: (address: string) => void }) => {
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   const [balance, set_balance] = useState(0);
 
-
+  let initial_value: UserShare = get_zero_share(address);
+  let [user_info, set_user_info] = useState<UserShare>(initial_value);
+  let [periods, set_periods] = useState<BonusPeriodWrapper[]>()
 
   // const [totalDeposit, setTotalDeposit] = useState(0);
   // const [interest, setInterest] = useState(0);
@@ -77,9 +79,18 @@ const UserInfoUI = (props: { onSelectPeriod: (address: string) => void }) => {
     get_bonus_periods(suiClient).then((periods: BonusPeriodWrapper[]) => {
       set_periods(periods);
       if (periods.length > 0) {
-        props.onSelectPeriod(periods[0].id.id);
+        props.onSelectPeriod(periods[0]);
       }
     });
+  }
+
+  function select_period_id( id : string ){
+    if(!periods) return;
+    for(let i = 0; i < periods!.length; ++ i){
+      if(id == periods![i].id.id){
+        props.onSelectPeriod(periods![i]);
+      }
+    }
   }
 
   let refresh_user = (response: SuiTransactionBlockResponse) => {
@@ -179,10 +190,7 @@ const UserInfoUI = (props: { onSelectPeriod: (address: string) => void }) => {
      })
   }
 
-  let initial_value: UserShare = get_zero_share(address);
 
-  let [user_info, set_user_info] = useState<UserShare>(initial_value);
-  let [periods, set_periods] = useState<BonusPeriodWrapper[]>()
 
   useEffect(() => {
     query_balance();
@@ -197,6 +205,8 @@ const UserInfoUI = (props: { onSelectPeriod: (address: string) => void }) => {
     query_periods();
   }, []);
   return (
+    <div>
+    
     <Tabs.Root className="TabsRoot" defaultValue="tab1">
       <Tabs.List className="TabsList" aria-label="Manage your account">
         <Tabs.Trigger className="TabsTrigger" value="tab1">
@@ -213,18 +223,19 @@ const UserInfoUI = (props: { onSelectPeriod: (address: string) => void }) => {
         </Tabs.Trigger> : <span />}
       </Tabs.List>
       <Tabs.Content className="TabsContent" value="tab1">
-        <DepositUI user_info={user_info} balance={balance} deposit={deposit} change_period={props.onSelectPeriod} periods={periods}></DepositUI>
+      <DepositUI user_info={user_info} balance={balance} deposit={deposit} change_period={select_period_id} periods={periods}></DepositUI>
       </Tabs.Content>
       <Tabs.Content className="TabsContent" value="tab2">
-        <WithdrawUI user_info={user_info} balance={balance} withdraw={withdraw} change_period={props.onSelectPeriod} periods={periods}></WithdrawUI>
+        <WithdrawUI user_info={user_info} balance={balance} withdraw={withdraw} change_period={select_period_id} periods={periods}></WithdrawUI>
       </Tabs.Content>
       {address == admin ? <Tabs.Content className="TabsContent" value="tab3">
-        <AdminUI user_info={user_info} balance={balance} storage={storage}  assign={assign} withdraw_fee={withdraw_fee} change_period={props.onSelectPeriod} periods={periods}></AdminUI>
+        <AdminUI user_info={user_info} balance={balance} storage={storage}  assign={assign} withdraw_fee={withdraw_fee} change_period={select_period_id} periods={periods}></AdminUI>
       </Tabs.Content> : <span />}
       { is_operator ? <Tabs.Content className="TabsContent" value="tab4">
-        <OperatorUI user_info={user_info} balance={balance} storage={storage}  donate={donate} allocate={allocate} change_period={props.onSelectPeriod} periods={periods}></OperatorUI>
+        <OperatorUI user_info={user_info} balance={balance} storage={storage}  donate={donate} allocate={allocate} change_period={select_period_id} periods={periods}></OperatorUI>
       </Tabs.Content> : <span />}
     </Tabs.Root>
+    </div>
   )
 }
 

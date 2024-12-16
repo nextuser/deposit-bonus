@@ -134,6 +134,15 @@ export async  function get_admin(client : SuiClient ){
     return await get_owner(client,consts.admin_cap);
 }
 
+
+function fill(str : string,len :number) {
+    let start = str.length  ;
+    let prefix = Array(len).join('0').slice( start);
+    let result = prefix + str;
+    return result ;
+  }
+
+  
 //get_user_share(consts.USER_1);
 //get_admin(suiClient).then(console.log);
 get_operators(suiClient).then(console.log);

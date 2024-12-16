@@ -8,6 +8,7 @@ import { networkConfig,useNetworkVariable } from "./networkConfig";
 import { BonusPeriodWrapper,UserInfo,StorageWrapper,BonusWrapper,BonusRecord,StorageData} from './contract_types'
 import {UserList,Field_address_UserShare,FieldObject,FieldData,UserShare,OperatorCap} from './contract_types'
 import { devnet_consts as consts } from "./consts";
+import { sui_show } from "./util";
 console.log(networkConfig)
 console.log(useNetworkVariable);
 import { SuiClient } from "@mysten/sui/client";
@@ -21,6 +22,43 @@ export function get_zero_share(addr : string):UserShare{
             asset : 0,
     };
 }
+
+export async  function get_record_share( suiClient:SuiClient,records: BonusRecord[]) : Promise<BonusRecord[]>{
+    let result = await suiClient.getObject({
+        id: consts.storage,
+        options: {
+            showContent: true,
+        }
+    });
+    console.log(result);
+    let content = result.data!.content! as unknown as { fields: any };
+    let new_storage = content.fields as unknown as StorageData;
+    
+    console.log("----------fields---------------")
+    console.log(new_storage);
+    let count = new_storage.user_shares.fields.count;
+    if(count == 0){
+        return records;
+    }
+    for(let i = 0 ; i < records.length; ++ i )
+    {
+         
+        let values = new_storage.user_shares.fields.values;
+        let values_id = ( values as unknown as FieldData).fields.id.id;
+            
+        let obj = await suiClient.getDynamicFieldObject({parentId: values_id, name : {type:'address', value:records[i].id}})
+        if(!obj.data || !obj.data!.content){
+            continue;
+        }
+        let field = obj.data!.content as unknown as Field_address_UserShare;
+        let share = field.fields.value.fields as UserShare;
+        records[i].asset = share.share_amount * (new_storage.total_staked /new_storage.total_shares);
+        console.log("share name:",field.fields.name);
+        console.log('share---\n',share);
+    }   
+    return records;
+}
+
 
 export async function get_records(suiClient:SuiClient,period_id : string) :Promise<BonusRecord[]> {
     
@@ -39,11 +77,15 @@ export async function get_records(suiClient:SuiClient,period_id : string) :Promi
         let record = period.bonus_list[i].fields
         record.gain = record.gain / 1e9
         record.pay = record.pay / 1e9
+
         record.principal = record.principal/ 1e9
+        //pay is 50% of interest now, TODO  add asset field in move contract
+        record.asset = record.principal + record.pay 
         record_list.push(record);
     }
     console.log('get_records:',record_list);
-    return record_list
+    return record_list;
+    //return await get_record_share(suiClient,record_list);
 }
 //@$CLOCK @$STORAGE @$SYSTEM_STATE @$VALIDATOR new_coin \
 export  function get_deposit_tx(amount :number ) :Transaction{

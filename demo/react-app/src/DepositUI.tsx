@@ -15,7 +15,7 @@ const DepositUI = (props : {user_info:UserShare,
                           periods : BonusPeriodWrapper[]|undefined}) => {
   let user_info = props.user_info;
   let max = Number(props.balance);
-
+  let address = useCurrentAccount()?.address;                        
 
   const handleAddDeposit = () => {
     // 假设这里是添加存款的逻辑
@@ -48,6 +48,7 @@ const DepositUI = (props : {user_info:UserShare,
           <div>你的资产: {sui_show(user_info.original_money)} </div>
           <div>你的利息: {sui_show( (user_info.asset - user_info.original_money))} </div>
           <div>你的奖金: {sui_show(user_info.bonus)} </div>
+          <div>你的地址:{address}</div>
         </div>
         <select onChange={ (e) =>{console.log(e);  props.change_period(e.target.value)  }}>
             {
@@ -58,7 +59,6 @@ const DepositUI = (props : {user_info:UserShare,
 
             }
         </select>
-        <div>距离下次开奖还有23小时23分钟</div>
       </div>
     </div>
   );
