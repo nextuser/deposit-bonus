@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Tabs from "@radix-ui/react-tabs";
+import './index.css'
 import { BonusPeriodWrapper, UserShare, DepositEvent, StorageData } from './contract_types'
 import DepositUI from './DepositUI';
 import WithdrawUI from './WithdrawUI';
@@ -206,22 +207,30 @@ const UserInfoUI = (props: { onSelectPeriod: (period: BonusPeriodWrapper) => voi
   }, []);
   return (
     <div>
-    
-    <Tabs.Root className="TabsRoot" defaultValue="tab1">
-      <Tabs.List className="TabsList" aria-label="Manage your account">
-        <Tabs.Trigger className="TabsTrigger" value="tab1">
-          存款
-        </Tabs.Trigger>
-        <Tabs.Trigger className="TabsTrigger" value="tab2">
-          取款
-        </Tabs.Trigger>
-        {address == admin ? <Tabs.Trigger className="TabsTrigger" value="tab3">
-          管理
-        </Tabs.Trigger> : <span/>}
-        {is_operator ? <Tabs.Trigger className="TabsTrigger" value="tab4">
-          运营
-        </Tabs.Trigger> : <span />}
-      </Tabs.List>
+          <Tabs.Root className="TabsRoot" defaultValue="tab1">
+        <Tabs.List className="TabsList" aria-label="Manage your account">
+          <Tabs.Trigger 
+            className={`TabsTrigger ${address && periods && address === periods[0].id.id ? "selected" : ""}`} 
+            value="tab1">
+            存款
+          </Tabs.Trigger>
+          <Tabs.Trigger 
+            className={`TabsTrigger ${address && periods && address !== periods[0].id.id ? "selected" : ""}`} 
+            value="tab2">
+            取款
+          </Tabs.Trigger>
+          {address === admin ? (
+            <Tabs.Trigger className="TabsTrigger" value="tab3">
+              管理
+            </Tabs.Trigger>
+          ) : null}
+          {is_operator ? (
+            <Tabs.Trigger className="TabsTrigger" value="tab4">
+              运营
+            </Tabs.Trigger>
+          ) : null}
+        </Tabs.List>
+
       <Tabs.Content className="TabsContent" value="tab1">
       <DepositUI user_info={user_info} balance={balance} deposit={deposit} change_period={select_period_id} periods={periods}></DepositUI>
       </Tabs.Content>

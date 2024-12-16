@@ -1,4 +1,3 @@
-//import React from "react"
 import { Table, Button, message } from "antd"
 import { CopyOutlined } from "@ant-design/icons";
 import data from "./services/data";
@@ -66,52 +65,88 @@ const columns: ColumnsType<BonusRecord> = [
 
 
 
-const TableUI = ( props:{period: BonusPeriodWrapper | null }) => {
+const TableUI = (props: { period: BonusPeriodWrapper | null }) => {
   let suiClient = useSuiClient();
-  let [records,set_records] = useState<BonusRecord[]>([]);
+  let [records, set_records] = useState<BonusRecord[]>([]);
   let hit = 0n;
   let hit_len = 0n;
-  let max = 2n**256n - 1n;
+  let max = 2n ** 256n - 1n;
   let range1 = null;
   let range2 = null;
-  if(props.period != null){
+
+  if (props.period != null) {
     hit = BigInt(props.period!.seed);
-    hit_len = max / 10000n * BigInt(props.period.percent); 
-    if(hit + hit_len <= max){
-      range1 = range(hit,hit+hit_len);
-    }
-    else{
-      range1 = range(hit,max);
-      
-      range2 = range(0n,hit + hit_len - max);  
+    hit_len = max / 10000n * BigInt(props.period.percent);
+    if (hit + hit_len <= max) {
+      range1 = range(hit, hit + hit_len);
+    } else {
+      range1 = range(hit, max);
+      range2 = range(0n, hit + hit_len - max);
     }
   }
- 
-  useEffect(()=>{
-    if(props.period){
-      get_records(suiClient,props.period.id.id ).then((r)=>{
+
+  useEffect(() => {
+    if (props.period) {
+      get_records(suiClient, props.period.id.id).then((r) => {
         set_records(r);
-        console.log(r)
+        console.log(r);
       });
-     
     }
-  },[props.period])
+  }, [props.period]);
+
   return (
-    
-    <div> {range1 ?
-      <div>中奖区域：<br/>
-        <span style={{fontSize:'13px',fontFamily:'consolas'}}>{range1}</span><br></br>
-        {range2 ?  <span style={{fontSize:'13px',fontFamily:'consolas'}}>{range2 }</span> : <span/> }
-      </div>
-      :<span/>}
+    <div style={{ marginTop: "40px" }}> {/* Add margin here */}
+      {range1 ? (
+        <div
+          style={{
+            background: "linear-gradient(90deg, #FFA108, #FEF102)", // 渐变背景
+            padding: "20px",
+            borderRadius: "10px",
+            border: "2px solid #FFA108", // 边框颜色
+            width: "fit-content", // 内容宽度自适应
+            marginBottom: "20px", // 给下面内容留出间距
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", // 提升卡片效果
+          }}
+        >
+          <div
+            style={{
+              fontSize: "16px",
+              fontWeight: "bold",
+              color: "#333",
+              marginBottom: "10px",
+            }}
+          >
+            中奖区域：
+          </div>
+          <div style={{ fontSize: "14px", fontFamily: "consolas", color: "#333" }}>
+            <span>{range1}</span>
+            <br />
+            {range2 ? (
+              <span style={{ fontSize: "14px", fontFamily: "consolas", color: "#333" }}>
+                {range2}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <span />
+      )}
+
       <Table
         columns={columns}
         dataSource={records}
         rowKey="id"
         pagination={{ pageSize: 3 }}
+        style={{
+          background: "#fff", // Background for the table
+          borderRadius: "10px",
+          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)", // Box shadow for the table
+        }}
+        rowClassName="ant-table-row-hover"
+        bordered
       />
     </div>
-  )
-}
+  );
+};
 
-export default TableUI
+export default TableUI;
