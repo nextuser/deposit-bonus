@@ -21,7 +21,7 @@ const OperatorUI = (props : {user_info:UserShare,
 
   return (
     <div>
-      <div>MAX: {sui_show(max_value)} </div>
+      <div>你的钱包余额: {sui_show(max_value)} </div>
       <Space.Compact style={{ marginBottom: 20 }}>
         <Input
           style={{ width: "60%", marginRight: 10 }}
@@ -44,9 +44,7 @@ const OperatorUI = (props : {user_info:UserShare,
           分配奖金
         </Button></div>
         </div>
-        <div style={{ marginBottom: 10 }}>
-          <div>你的钱包余额: {sui_show(props.balance)} </div>
-        </div>
+
         <select onChange={ (e) =>{console.log(e);  props.change_period(e.target.value)  }}>
             {
               props.periods && props.periods!.map( (p,k)=>{

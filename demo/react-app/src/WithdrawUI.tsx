@@ -84,6 +84,8 @@ const WithdrawUI = (props : {user_info:UserShare,
       </Card>
 
     </div>
+          <div>你的钱包余额: {sui_show(props.balance)} </div>
+          <div>你的地址:{useCurrentAccount()!.address}</div>
 
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       <Button className="flex items-center gap-2 text-[#FFD700] mb-4" style={{ backgroundColor: '#FFD700', color: 'black' }}>
@@ -101,6 +103,7 @@ const WithdrawUI = (props : {user_info:UserShare,
           <option disabled>没有可用的期次</option>
         )}
       </select>
+
 
       </div>
     </div>
