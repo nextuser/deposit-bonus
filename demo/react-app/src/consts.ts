@@ -6,50 +6,56 @@ export type NetworkConsts ={
         operator_cap:string;
         bonus_history:string;
         storage:string;
+        VALIDATOR:string,
         ADMIN : string;
         OPERATOR:string;
         USER_1:string;
         USER_2:string;
         USER_3:string;
-        VALIDATOR:string,
+        
         CLOCK:string,
         RND:string,
         SYSTEM_STATE:string,
 }
 
 export const devnet_consts : NetworkConsts = {   
-        package_id: '0x847fa8f44626965ea60da104cb516e23f07295368638349732c32e40121ab9c3',
-        admin_cap:"0x4e1465a4b512eb7ffea9fbfec6cbffbf36775f9a27829dbb648da6c3d9e90ad6",
-        operator_cap:"0xc817ed4dce069bf0f1655fc2c153c7d414bab419a6c19848c6363047fd78eb2f",
-        bonus_history:"0xb766bf842ed30fc0a692702e60e28614fa27b23afeb56f82e70f780a081db2ef",
-        storage:"0x45951d2df97d4157fc078e692f3b768f55f20bc9cf922ba755435c00a882e206",
+        package_id: '0x480672f27b74d5c3ee836aff7fa5e608f930fb8e7b005b70c69f9a7e5d54806f',
+        admin_cap:"0xb2ad5ece67e6b4dc5ce23c3f2b60949969d057a5c1a0afb53d8a3fda7b96b4c2",
+        operator_cap:"0xfe2b41d365fd63b7a4b7af8be38484639c3e671189ae9677935c24484209ab0d",
+        bonus_history:"0x78e66fb087dfc225fc635f5acf3f21c5ff99807e017e18e15d2a47f3636d9a58",
+        storage:"0x70a35e2e218245713566a6fdf2b7a1f7f9e7e6382020d08441f95a5d6a8ed8f8",
+        VALIDATOR:"0xb072496ed4c39e346b47fb935bdd1d2ec983c407229b836f05759f7c19dd3a1e",
+        
         ADMIN : "0x42a27bbee48b8c97b05540e823e118fe6629bd5d83caf19ef8e9051bf3addf9e",
         OPERATOR:"0x8f6bd80bca6fb0ac57c0754870b80f2f47d3c4f4e815719b4cda8102cd1bc5b0",
         USER_1:"0x5e23b1067c479185a2d6f3e358e4c82086032a171916f85dc9783226d7d504de",
         USER_2:"0x16781b5507cafe0150fe3265357cccd96ff0e9e22e8ef9373edd5e3b4a808884",
         USER_3:"0xa23b00a9eb52d57b04e80b493385488b3b86b317e875f78e0252dfd1793496bb",
-        VALIDATOR:"0x94beb782ccfa172ea8752123e73768757a1f58cfca53928e9ba918a2c44a695b",
+        
         CLOCK:"0x6",
         RND:"0x8",
         SYSTEM_STATE:"0x5",
 }
 
 
+
 export const mainnet_consts : NetworkConsts = {   
-        package_id: '',
-        admin_cap:"",
-        operator_cap:"",
-        bonus_history:"",
-        storage:"",
-        ADMIN : "",
-        OPERATOR:"",
-        USER_1:"",
-        USER_2:"",
-        USER_3:"",
+        package_id: '0x480672f27b74d5c3ee836aff7fa5e608f930fb8e7b005b70c69f9a7e5d54806f',
+        admin_cap:"0xb2ad5ece67e6b4dc5ce23c3f2b60949969d057a5c1a0afb53d8a3fda7b96b4c2",
+        operator_cap:"0xfe2b41d365fd63b7a4b7af8be38484639c3e671189ae9677935c24484209ab0d",
+        bonus_history:"0x78e66fb087dfc225fc635f5acf3f21c5ff99807e017e18e15d2a47f3636d9a58",
+        storage:"0x70a35e2e218245713566a6fdf2b7a1f7f9e7e6382020d08441f95a5d6a8ed8f8",
         VALIDATOR:"0x94beb782ccfa172ea8752123e73768757a1f58cfca53928e9ba918a2c44a695b",
+        
+        ADMIN : "0x42a27bbee48b8c97b05540e823e118fe6629bd5d83caf19ef8e9051bf3addf9e",
+        OPERATOR:"0x8f6bd80bca6fb0ac57c0754870b80f2f47d3c4f4e815719b4cda8102cd1bc5b0",
+        USER_1:"0x5e23b1067c479185a2d6f3e358e4c82086032a171916f85dc9783226d7d504de",
+        USER_2:"0x16781b5507cafe0150fe3265357cccd96ff0e9e22e8ef9373edd5e3b4a808884",
+        USER_3:"0xa23b00a9eb52d57b04e80b493385488b3b86b317e875f78e0252dfd1793496bb",
+        
         CLOCK:"0x6",
         RND:"0x8",
-        SYSTEM_STATE:"0x5", 
+        SYSTEM_STATE:"0x5",
 }
 
 
@@ -60,12 +66,14 @@ export const testnet_consts : NetworkConsts = {
         operator_cap:"",
         bonus_history:"",
         storage:"",
-        ADMIN : "",
-        OPERATOR:"",
-        USER_1:"",
-        USER_2:"",
-        USER_3:"",
         VALIDATOR:"0x94beb782ccfa172ea8752123e73768757a1f58cfca53928e9ba918a2c44a695b",
+        
+        ADMIN : "0x42a27bbee48b8c97b05540e823e118fe6629bd5d83caf19ef8e9051bf3addf9e",
+        OPERATOR:"0x8f6bd80bca6fb0ac57c0754870b80f2f47d3c4f4e815719b4cda8102cd1bc5b0",
+        USER_1:"0x5e23b1067c479185a2d6f3e358e4c82086032a171916f85dc9783226d7d504de",
+        USER_2:"0x16781b5507cafe0150fe3265357cccd96ff0e9e22e8ef9373edd5e3b4a808884",
+        USER_3:"0xa23b00a9eb52d57b04e80b493385488b3b86b317e875f78e0252dfd1793496bb",
+        
         CLOCK:"0x6",
         RND:"0x8",
         SYSTEM_STATE:"0x5",
