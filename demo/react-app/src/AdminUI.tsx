@@ -7,7 +7,7 @@ import { BonusPeriodWrapper } from './contract_types';
 import { to_date_str ,sui_show} from './util';
 import { progressPropDefs } from '@radix-ui/themes/dist/esm/components/progress.props.js';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
-
+import { AddressBalance } from './AddressBalance';
 const AdminUI = (props : {user_info : UserShare,
                           storage : StorageData | null,
                           balance : number,
@@ -53,7 +53,6 @@ const AdminUI = (props : {user_info : UserShare,
       </div>  
       <div style={{ marginBottom: 20 }}>
         <div style={{ marginBottom: 10 }}>
-          <div>你的钱包余额: {sui_show(props.balance)} </div>
           {props.storage != null ? 
           <div>
             <div>总存款: {sui_show(props.storage!.total_staked)} </div>
@@ -63,6 +62,7 @@ const AdminUI = (props : {user_info : UserShare,
           </div>
           : <span/> }
         </div>
+        <AddressBalance balance={props.balance}/>
         <select onChange={ (e) =>{console.log(e);  props.change_period(e.target.value)  }}>
             {
               props.periods && props.periods!.map( (p,k)=>{

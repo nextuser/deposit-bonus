@@ -125,7 +125,7 @@ export function get_allocate_bonus_tx() : Transaction{
                    tx.object(consts.bonus_history)]
     })
 
-    tx.setGasBudget(1e8);
+    tx.setGasBudget(5e7);
     return tx;
 }
 

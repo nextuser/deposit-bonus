@@ -7,6 +7,7 @@ import { to_date_str ,sui_show} from './util';
 import { progressPropDefs } from '@radix-ui/themes/dist/esm/components/progress.props.js';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { get_balance } from './data-provider';
+import { AddressBalance } from './AddressBalance';
 
 const OperatorUI = (props : {user_info:UserShare, 
                           balance:number,
@@ -21,7 +22,7 @@ const OperatorUI = (props : {user_info:UserShare,
 
   return (
     <div>
-      <div>你的钱包余额: {sui_show(max_value)} </div>
+      <AddressBalance balance={props.balance}/>
       <Space.Compact style={{ marginBottom: 20 }}>
         <Input
           style={{ width: "60%", marginRight: 10 }}

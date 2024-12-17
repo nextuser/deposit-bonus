@@ -6,7 +6,18 @@ import { UserShare } from './contract_types';
 import { BonusPeriodWrapper } from './contract_types';
 import { to_date_str ,sui_show} from './util';
 import { progressPropDefs } from '@radix-ui/themes/dist/esm/components/progress.props.js';
+import { DownOutlined } from '@ant-design/icons';
 import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { AddressBalance } from './AddressBalance';
+import { StakeInfo } from './StakeInfo';
 
 const DepositUI = (props : {user_info:UserShare, 
                           balance:number,
@@ -26,8 +37,7 @@ const DepositUI = (props : {user_info:UserShare,
   let [deposit_value, set_deposit_value ] = useState<string>("");
 
   return (
-    <div>
-      <div>钱包余额：{sui_show(max)}</div>
+    <div style={{ marginTop: "20px" }}>
       <Space.Compact style={{ marginBottom: 20 }}>
         <Input
           style={{ width: "60%", marginRight: 10 }}
@@ -35,32 +45,37 @@ const DepositUI = (props : {user_info:UserShare,
           value={deposit_value}
           onChange={ (e)=>{set_deposit_value(e.target.value)}}
         />
-        <Button type="primary" onClick={(e) =>props.deposit && props.deposit(deposit_value,max/1e9)}>
+
+        <Button 
+          onClick={(e) => props.deposit && props.deposit(deposit_value, max / 1e9)} 
+          style={{ backgroundColor: '#FFD700', color: 'black' }}
+        >
           增加存款
         </Button>
-        
       </Space.Compact>
       
-      
-      
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ marginBottom: 10 }}>
-          <div>你的资产: {sui_show(user_info.original_money)} </div>
-          <div>你的利息: {sui_show( (user_info.asset - user_info.original_money))} </div>
-          <div>你的奖金: {sui_show(user_info.bonus)} </div>
-          <div>你的地址:{address}</div>
-        </div>
-        <select onChange={ (e) =>{console.log(e);  props.change_period(e.target.value)  }}>
-            {
-              props.periods && props.periods!.map( (p,k)=>{
-                  //console.log("period:", p);
-                  return <option value={p.id.id} key={p.id.id}>{to_date_str(Number(p.time_ms))}</option>
-              })
+     
+    <StakeInfo user_info={props.user_info} />
+    <AddressBalance balance={props.balance} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+  <Button className="flex items-center gap-2 text-[#FFD700] mb-4" style={{ backgroundColor: '#FFD700', color: 'black' }}>
+    历史开奖时间
+  </Button>
+  
+  <select 
+    onChange={(e) => {
+      console.log(e);  
+      props.change_period(e.target.value);
+    }} 
+    style={{ padding: '5px', fontSize: '14px' }}
+  >
+    {props.periods && props.periods!.map((p, k) => {
+      return <option value={p.id.id} key={p.id.id}>{to_date_str(Number(p.time_ms))}</option>
+    })}
+  </select>
+</div>
 
-            }
-        </select>
       </div>
-    </div>
   );
 };
 

@@ -1,2 +1,6 @@
 *.key
 **/*.key
+**/node_modules
+**/.history
+**/dist
+bak
